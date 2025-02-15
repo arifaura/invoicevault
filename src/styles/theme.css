@@ -1,0 +1,238 @@
+/* Default theme (light) */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --text-primary: #000000;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --border-color: #e5e7eb;
+  --input-bg: #ffffff;
+  --card-bg: #ffffff;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  --btn-primary-bg: #000000;
+  --btn-primary-text: #ffffff;
+  --btn-secondary-bg: #ffffff;
+  --btn-secondary-border: #e5e7eb;
+  --btn-secondary-text: #4b5563;
+  --link-color: #6366f1;
+  --checkbox-border: #d1d5db;
+  --logo-color: #6366f1;
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #1a1a1a;
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --border-color: #27272a;
+  --input-bg: #27272a;
+  --card-bg: #27272a;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --btn-primary-bg: #ffffff;
+  --btn-primary-text: #18181b;
+  --btn-secondary-bg: #27272a;
+  --btn-secondary-border: #3f3f46;
+  --btn-secondary-text: #ffffff;
+  --link-color: #818cf8;
+  --checkbox-border: #3f3f46;
+  --logo-color: #818cf8;
+}
+
+/* Base styles */
+html {
+  transition: background-color 0.3s ease;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  transition: all 0.3s ease;
+}
+
+/* App container */
+.App {
+  min-height: 100vh;
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+[data-theme="dark"] body,
+[data-theme="dark"] .App {
+  background-color: var(--bg-secondary) !important;
+}
+
+/* Card styles */
+.card {
+  background-color: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  border-color: var(--border-color);
+  transition: all 0.3s ease;
+}
+
+/* Typography */
+.logo-text {
+  color: var(--logo-color) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary) !important;
+}
+
+p, span {
+  color: var(--text-secondary) !important;
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
+}
+
+/* Form elements */
+.form-label {
+  color: var(--text-secondary) !important;
+}
+
+.form-control {
+  background-color: var(--input-bg) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.form-control:focus {
+  background-color: var(--input-bg) !important;
+  border-color: var(--link-color) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25) !important;
+}
+
+.form-control::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Buttons */
+.btn-dark {
+  background-color: var(--btn-primary-bg) !important;
+  color: var(--btn-primary-text) !important;
+  border: none;
+}
+
+.btn-dark:hover {
+  opacity: 0.9;
+}
+
+.btn-outline-secondary {
+  background-color: var(--btn-secondary-bg) !important;
+  border-color: var(--btn-secondary-border) !important;
+  color: var(--btn-secondary-text) !important;
+}
+
+.btn-outline-secondary:hover {
+  opacity: 0.9;
+}
+
+/* Checkbox */
+.form-check-input {
+  background-color: var(--input-bg) !important;
+  border-color: var(--checkbox-border) !important;
+}
+
+.form-check-input:checked {
+  background-color: var(--link-color) !important;
+  border-color: var(--link-color) !important;
+}
+
+.form-check-label {
+  color: var(--text-secondary) !important;
+}
+
+/* Links */
+a {
+  color: var(--link-color) !important;
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--link-color) !important;
+  opacity: 0.8;
+}
+
+/* Theme toggle */
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.1);
+  background-color: var(--bg-secondary);
+}
+
+/* Password requirements */
+.password-requirements li {
+  color: var(--text-secondary) !important;
+}
+
+.password-requirements li.valid {
+  color: #10b981 !important;
+}
+
+.password-requirements li.invalid {
+  color: #ef4444 !important;
+}
+
+/* Additional dark mode specific overrides */
+[data-theme="dark"] .card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .form-control {
+  background-color: var(--input-bg);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .form-control:focus {
+  background-color: var(--input-bg);
+  border-color: var(--link-color);
+  box-shadow: 0 0 0 0.2rem rgba(129, 140, 248, 0.25);
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+  background-color: var(--input-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .theme-toggle {
+  background-color: var(--input-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+  background-color: var(--card-bg);
+} 
