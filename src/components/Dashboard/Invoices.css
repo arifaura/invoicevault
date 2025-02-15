@@ -590,4 +590,56 @@
 .empty-state .btn-primary:hover {
     background-color: #4f46e5;
     transform: translateY(-1px);
+}
+
+.bulk-actions {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-primary);
+    padding: 12px 24px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 100;
+    border: 1px solid var(--border-color);
+}
+
+.bulk-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.bulk-action-btn:hover {
+    background: var(--bg-hover);
+}
+
+.bulk-action-btn.delete {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.bulk-action-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.selected-count {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-left: 8px;
+    padding-left: 8px;
+    border-left: 1px solid var(--border-color);
 } 

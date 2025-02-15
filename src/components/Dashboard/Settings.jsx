@@ -1,94 +1,209 @@
-import React, { useState } from 'react';
-import { FiUser, FiLock, FiBell, FiDollarSign, FiGrid, FiSave } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiUser, FiLock, FiBell, FiDollarSign, FiGrid, FiSave, FiX, FiLoader, FiCamera } from 'react-icons/fi';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../utils/supabaseClient';
+import { toast } from 'react-hot-toast';
+import { useProfile } from '../../context/ProfileContext';
 import './Settings.css';
 
+
 const Settings = () => {
+  const { user } = useAuth();
+  const { profile, setProfile } = useProfile();
   const [activeTab, setActiveTab] = useState('profile');
-  const [settings, setSettings] = useState({
-    profile: {
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john.doe@example.com',
-      phone: '+91 98765 43210',
-      avatar: null
-    },
-    security: {
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    },
-    notifications: {
-      invoiceCreated: true,
-      invoicePaid: true,
-      invoiceOverdue: true,
-      warrantyExpiring: true,
-      dailyDigest: false
-    },
-    preferences: {
-      currency: 'INR',
-      dateFormat: 'DD/MM/YYYY',
-      timeZone: 'Asia/Kolkata',
-      language: 'en'
-    },
-    invoiceDefaults: {
-      defaultPaymentTerms: 'net_30',
-      defaultCategory: 'general',
-      defaultWarrantyPeriod: '1_year',
-      autoGenerateInvoiceNumber: true,
-      invoiceNumberPrefix: 'INV'
-    }
+  const [loading, setLoading] = useState(false);
+
+  // Add security state
+  const [securityForm, setSecurityForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
   });
 
-  const handleInputChange = (section, field, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value
+  // Fetch profile data on component mount
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Profile doesn't exist, create one
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert([
+              {
+                id: user.id,
+                first_name: '',
+                last_name: '',
+                email: user.email,
+                phone: '',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }
+            ]);
+
+          if (insertError) throw insertError;
+          
+          // Fetch the profile again
+          await fetchProfile();
+          return;
+        }
+        throw error;
       }
+
+      if (data) {
+        setProfile({
+          firstName: data.first_name || '',
+          lastName: data.last_name || '',
+          email: data.email || user.email || '',
+          phone: data.phone || '',
+          avatar: data.avatar_url
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      toast.error('Failed to load profile data');
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    setProfile(prev => ({
+      ...prev,
+      [field]: value
     }));
   };
 
-  const handleAvatarChange = (e) => {
+  const handleAvatarUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        handleInputChange('profile', 'avatar', reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    try {
+      setLoading(true);
+
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        throw new Error('File size must be less than 2MB');
+      }
+
+      // Validate file type
+      if (!file.type.match(/^image\/(jpeg|png|gif)$/)) {
+        throw new Error('File must be an image (JPG, PNG, or GIF)');
+      }
+
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+
+      // Delete old avatar if exists
+      if (profile.avatar) {
+        const oldFileName = profile.avatar.split('/').pop();
+        if (oldFileName) {
+          await supabase.storage
+            .from('avatars')
+            .remove([oldFileName]);
+        }
+      }
+
+      // Upload new avatar
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with new avatar URL
+      handleInputChange('avatar', publicUrl);
+      
+      toast.success('Profile picture updated successfully!');
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error(error.message || 'Failed to upload profile picture');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSaveSettings = (section) => {
-    // Here you would typically make an API call to save the settings
-    console.log(`Saving ${section} settings:`, settings[section]);
-    // Show success message
-    alert(`${section.charAt(0).toUpperCase() + section.slice(1)} settings saved successfully!`);
+  const handleSaveProfile = async () => {
+    try {
+      setLoading(true);
+
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          first_name: profile.firstName,
+          last_name: profile.lastName,
+          email: profile.email,
+          phone: profile.phone,
+          avatar_url: profile.avatar,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error(error.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handlePasswordChange = (e) => {
+  // Add password change handler
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
-    const { currentPassword, newPassword, confirmPassword } = settings.security;
     
-    if (newPassword !== confirmPassword) {
-      alert('New passwords do not match!');
-      return;
+    try {
+      setLoading(true);
+
+      if (securityForm.newPassword !== securityForm.confirmPassword) {
+        throw new Error('New passwords do not match');
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: securityForm.newPassword
+      });
+
+      if (error) throw error;
+
+      // Clear form
+      setSecurityForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+
+      toast.success('Password updated successfully!');
+    } catch (error) {
+      console.error('Error updating password:', error);
+      toast.error(error.message || 'Failed to update password');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (newPassword.length < 8) {
-      alert('Password must be at least 8 characters long!');
-      return;
-    }
-
-    // Here you would typically make an API call to change the password
-    console.log('Changing password:', { currentPassword, newPassword });
-    alert('Password changed successfully!');
-
-    // Clear password fields
-    handleInputChange('security', 'currentPassword', '');
-    handleInputChange('security', 'newPassword', '');
-    handleInputChange('security', 'confirmPassword', '');
+  // Add security form change handler
+  const handleSecurityInputChange = (field, value) => {
+    setSecurityForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   return (
@@ -114,93 +229,107 @@ const Settings = () => {
             <FiLock size={20} />
             Security
           </button>
-          <button 
-            className={`settings-tab ${activeTab === 'notifications' ? 'active' : ''}`}
-            onClick={() => setActiveTab('notifications')}
-          >
-            <FiBell size={20} />
-            Notifications
-          </button>
-          <button 
-            className={`settings-tab ${activeTab === 'preferences' ? 'active' : ''}`}
-            onClick={() => setActiveTab('preferences')}
-          >
-            <FiGrid size={20} />
-            Preferences
-          </button>
-          <button 
-            className={`settings-tab ${activeTab === 'invoiceDefaults' ? 'active' : ''}`}
-            onClick={() => setActiveTab('invoiceDefaults')}
-          >
-            <FiDollarSign size={20} />
-            Invoice Defaults
-          </button>
+          {/* Remove other tab buttons for now */}
         </div>
 
         <div className="settings-panel">
           {activeTab === 'profile' && (
             <div className="settings-section">
               <h2>Profile Settings</h2>
+              
+              {/* Avatar Section */}
               <div className="avatar-section">
-                <div className="avatar-preview">
-                  {settings.profile.avatar ? (
-                    <img src={settings.profile.avatar} alt="Profile" />
+                <div className="avatar-wrapper">
+                  {profile.avatar ? (
+                    <img 
+                      src={profile.avatar} 
+                      alt="Profile" 
+                      className="avatar-preview"
+                    />
                   ) : (
                     <div className="avatar-placeholder">
-                      {settings.profile.firstName.charAt(0)}
-                      {settings.profile.lastName.charAt(0)}
+                      {profile.firstName?.charAt(0) || ''}
+                      {profile.lastName?.charAt(0) || ''}
                     </div>
                   )}
                 </div>
+                
                 <div className="avatar-upload">
                   <input
                     type="file"
                     id="avatar"
                     accept="image/*"
-                    onChange={handleAvatarChange}
+                    onChange={handleAvatarUpload}
                     hidden
                   />
-                  <label htmlFor="avatar" className="btn btn-secondary">
-                    Change Photo
+                  <label htmlFor="avatar" className="btn-change-photo">
+                    {loading ? (
+                      <>
+                        <FiLoader className="animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <FiCamera size={16} />
+                        Change Photo
+                      </>
+                    )}
                   </label>
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>First Name</label>
-                  <input
-                    type="text"
-                    value={settings.profile.firstName}
-                    onChange={(e) => handleInputChange('profile', 'firstName', e.target.value)}
-                  />
+              {/* Profile Form */}
+              <div className="settings-form">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>First Name</label>
+                    <input
+                      type="text"
+                      value={profile.firstName}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      placeholder="Enter your first name"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Last Name</label>
+                    <input
+                      type="text"
+                      value={profile.lastName}
+                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      placeholder="Enter your last name"
+                    />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Last Name</label>
-                  <input
-                    type="text"
-                    value={settings.profile.lastName}
-                    onChange={(e) => handleInputChange('profile', 'lastName', e.target.value)}
-                  />
-                </div>
-              </div>
 
-              <div className="form-row">
                 <div className="form-group">
                   <label>Email</label>
                   <input
                     type="email"
-                    value={settings.profile.email}
-                    onChange={(e) => handleInputChange('profile', 'email', e.target.value)}
+                    value={profile.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="Enter your email"
                   />
                 </div>
+
                 <div className="form-group">
                   <label>Phone</label>
                   <input
                     type="tel"
-                    value={settings.profile.phone}
-                    onChange={(e) => handleInputChange('profile', 'phone', e.target.value)}
+                    value={profile.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    placeholder="Enter your phone number"
                   />
+                </div>
+
+                <div className="settings-footer">
+                  <button 
+                    type="button"
+                    className="btn btn-primary save-btn"
+                    onClick={handleSaveProfile}
+                    disabled={loading}
+                  >
+                    {loading ? 'Saving...' : 'Save Changes'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -210,43 +339,37 @@ const Settings = () => {
             <div className="settings-section">
               <h2>Security Settings</h2>
               
-              {/* Password Change Form */}
               <div className="password-change-section">
                 <h3>Change Password</h3>
                 <form onSubmit={handlePasswordChange}>
                   <div className="form-group">
-                    <label htmlFor="currentPassword">Current Password</label>
+                    <label>Current Password</label>
                     <input
                       type="password"
-                      id="currentPassword"
-                      value={settings.security.currentPassword}
-                      onChange={(e) => handleInputChange('security', 'currentPassword', e.target.value)}
+                      value={securityForm.currentPassword}
+                      onChange={(e) => handleSecurityInputChange('currentPassword', e.target.value)}
                       required
                     />
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="newPassword">New Password</label>
+                    <label>New Password</label>
                     <input
                       type="password"
-                      id="newPassword"
-                      value={settings.security.newPassword}
-                      onChange={(e) => handleInputChange('security', 'newPassword', e.target.value)}
+                      value={securityForm.newPassword}
+                      onChange={(e) => handleSecurityInputChange('newPassword', e.target.value)}
                       required
                     />
-                    <div className="password-requirements mt-2">
-                      <p className="text-muted small mb-1">Password must have:</p>
-                      <ul className="list-unstyled small">
-                        <li className={`${settings.security.newPassword.length >= 8 ? 'valid' : 'invalid'}`}>
-                          <i className={`bi bi-${settings.security.newPassword.length >= 8 ? 'check' : 'x'}-circle-fill me-2`}></i>
+                    <div className="password-requirements">
+                      <p>Password must have:</p>
+                      <ul>
+                        <li className={securityForm.newPassword.length >= 8 ? 'valid' : 'invalid'}>
                           At least 8 characters
                         </li>
-                        <li className={`${/\d/.test(settings.security.newPassword) ? 'valid' : 'invalid'}`}>
-                          <i className={`bi bi-${/\d/.test(settings.security.newPassword) ? 'check' : 'x'}-circle-fill me-2`}></i>
+                        <li className={/\d/.test(securityForm.newPassword) ? 'valid' : 'invalid'}>
                           Include numbers
                         </li>
-                        <li className={`${/[!@#$%^&*]/.test(settings.security.newPassword) ? 'valid' : 'invalid'}`}>
-                          <i className={`bi bi-${/[!@#$%^&*]/.test(settings.security.newPassword) ? 'check' : 'x'}-circle-fill me-2`}></i>
+                        <li className={/[!@#$%^&*]/.test(securityForm.newPassword) ? 'valid' : 'invalid'}>
                           Include special characters
                         </li>
                       </ul>
@@ -254,186 +377,26 @@ const Settings = () => {
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="confirmPassword">Confirm New Password</label>
+                    <label>Confirm New Password</label>
                     <input
                       type="password"
-                      id="confirmPassword"
-                      value={settings.security.confirmPassword}
-                      onChange={(e) => handleInputChange('security', 'confirmPassword', e.target.value)}
+                      value={securityForm.confirmPassword}
+                      onChange={(e) => handleSecurityInputChange('confirmPassword', e.target.value)}
                       required
                     />
                   </div>
 
-                  <button type="submit" className="btn btn-primary">
-                    Change Password
+                  <button 
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={loading}
+                  >
+                    {loading ? 'Updating...' : 'Update Password'}
                   </button>
                 </form>
               </div>
             </div>
           )}
-
-          {activeTab === 'notifications' && (
-            <div className="settings-section">
-              <h2>Notification Preferences</h2>
-              {Object.entries(settings.notifications).map(([key, value]) => (
-                <div className="setting-item" key={key}>
-                  <div className="setting-info">
-                    <h3>{key.split(/(?=[A-Z])/).join(' ')}</h3>
-                    <p>Receive notifications when {key.split(/(?=[A-Z])/).join(' ').toLowerCase()}</p>
-                  </div>
-                  <div className="setting-action">
-                    <label className="switch">
-                      <input
-                        type="checkbox"
-                        checked={value}
-                        onChange={(e) => handleInputChange('notifications', key, e.target.checked)}
-                      />
-                      <span className="slider"></span>
-                    </label>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'preferences' && (
-            <div className="settings-section">
-              <h2>General Preferences</h2>
-              <div className="form-group">
-                <label>Default Currency</label>
-                <select
-                  value={settings.preferences.currency}
-                  onChange={(e) => handleInputChange('preferences', 'currency', e.target.value)}
-                >
-                  <option value="INR">Indian Rupee (₹)</option>
-                  <option value="USD">US Dollar ($)</option>
-                  <option value="EUR">Euro (€)</option>
-                  <option value="GBP">British Pound (£)</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Date Format</label>
-                <select
-                  value={settings.preferences.dateFormat}
-                  onChange={(e) => handleInputChange('preferences', 'dateFormat', e.target.value)}
-                >
-                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Time Zone</label>
-                <select
-                  value={settings.preferences.timeZone}
-                  onChange={(e) => handleInputChange('preferences', 'timeZone', e.target.value)}
-                >
-                  <option value="Asia/Kolkata">India (GMT+5:30)</option>
-                  <option value="UTC">UTC</option>
-                  <option value="America/New_York">Eastern Time</option>
-                  <option value="Europe/London">London</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Language</label>
-                <select
-                  value={settings.preferences.language}
-                  onChange={(e) => handleInputChange('preferences', 'language', e.target.value)}
-                >
-                  <option value="en">English</option>
-                  <option value="hi">Hindi</option>
-                  <option value="es">Spanish</option>
-                  <option value="fr">French</option>
-                </select>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'invoiceDefaults' && (
-            <div className="settings-section">
-              <h2>Invoice Default Settings</h2>
-              <div className="form-group">
-                <label>Default Payment Terms</label>
-                <select
-                  value={settings.invoiceDefaults.defaultPaymentTerms}
-                  onChange={(e) => handleInputChange('invoiceDefaults', 'defaultPaymentTerms', e.target.value)}
-                >
-                  <option value="immediate">Immediate</option>
-                  <option value="net_15">Net 15</option>
-                  <option value="net_30">Net 30</option>
-                  <option value="net_45">Net 45</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Default Category</label>
-                <select
-                  value={settings.invoiceDefaults.defaultCategory}
-                  onChange={(e) => handleInputChange('invoiceDefaults', 'defaultCategory', e.target.value)}
-                >
-                  <option value="general">General</option>
-                  <option value="electronics">Electronics</option>
-                  <option value="utilities">Utilities</option>
-                  <option value="groceries">Groceries</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Default Warranty Period</label>
-                <select
-                  value={settings.invoiceDefaults.defaultWarrantyPeriod}
-                  onChange={(e) => handleInputChange('invoiceDefaults', 'defaultWarrantyPeriod', e.target.value)}
-                >
-                  <option value="none">None</option>
-                  <option value="6_months">6 Months</option>
-                  <option value="1_year">1 Year</option>
-                  <option value="2_years">2 Years</option>
-                </select>
-              </div>
-
-              <div className="setting-item">
-                <div className="setting-info">
-                  <h3>Auto-generate Invoice Numbers</h3>
-                  <p>Automatically generate sequential invoice numbers</p>
-                </div>
-                <div className="setting-action">
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={settings.invoiceDefaults.autoGenerateInvoiceNumber}
-                      onChange={(e) => handleInputChange('invoiceDefaults', 'autoGenerateInvoiceNumber', e.target.checked)}
-                    />
-                    <span className="slider"></span>
-                  </label>
-                </div>
-              </div>
-
-              {settings.invoiceDefaults.autoGenerateInvoiceNumber && (
-                <div className="form-group">
-                  <label>Invoice Number Prefix</label>
-                  <input
-                    type="text"
-                    value={settings.invoiceDefaults.invoiceNumberPrefix}
-                    onChange={(e) => handleInputChange('invoiceDefaults', 'invoiceNumberPrefix', e.target.value)}
-                    placeholder="e.g., INV"
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="settings-footer">
-            <button 
-              className="btn btn-primary"
-              onClick={() => handleSaveSettings(activeTab)}
-            >
-              <FiSave size={16} />
-              Save Changes
-            </button>
-          </div>
         </div>
       </div>
     </div>

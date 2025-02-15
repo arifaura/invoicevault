@@ -5,6 +5,7 @@ import Sidebar from './Sidebar';
 import Footer from './Footer';
 import './DashboardLayout.css';
 import { useAuth } from '../../context/AuthContext';
+import { ProfileProvider } from '../../context/ProfileContext';
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -17,18 +18,20 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <Header onMenuClick={toggleSidebar} />
-      <div className="dashboard-content">
-        <Sidebar isOpen={isSidebarOpen} />
-        <main className={`main-content ${!isSidebarOpen ? 'expanded' : ''}`}>
-          <div className="content-wrapper">
-            <Outlet />
-          </div>
-          <Footer />
-        </main>
+    <ProfileProvider>
+      <div className="dashboard-container">
+        <Header onMenuClick={toggleSidebar} />
+        <div className="dashboard-content">
+          <Sidebar isOpen={isSidebarOpen} />
+          <main className={`main-content ${!isSidebarOpen ? 'expanded' : ''}`}>
+            <div className="content-wrapper">
+              <Outlet />
+            </div>
+            <Footer />
+          </main>
+        </div>
       </div>
-    </div>
+    </ProfileProvider>
   );
 };
 

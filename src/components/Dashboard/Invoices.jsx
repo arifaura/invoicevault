@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiPlus, FiDownload, FiTrash2, FiEdit2, FiEye, FiFilter, FiX, FiAlertTriangle } from 'react-icons/fi';
 import CreateInvoiceModal from './CreateInvoiceModal';
@@ -125,104 +125,6 @@ const Invoices = () => {
     setBulkDeleteAlert(true);
   };
 
-  const confirmBulkDelete = async () => {
-    try {
-      toast.loading('Deleting invoices...', {
-        id: 'bulkDeleteProgress'
-      });
-
-      // Delete multiple invoices from Supabase
-      const { error } = await supabase
-        .from('invoices')
-        .delete()
-        .in('id', selectedInvoices.map(id => id.replace('#', '')));
-
-      if (error) throw error;
-
-      // Update local state
-      setInvoices(prevInvoices => 
-        prevInvoices.filter(inv => !selectedInvoices.includes(inv.id))
-      );
-      setSelectedInvoices([]); // Clear selection
-
-      toast.success(`Successfully deleted ${selectedInvoices.length} invoices! 🗑️`, {
-        duration: 4000,
-        icon: '✅'
-      });
-    } catch (error) {
-      console.error('Error deleting invoices:', error);
-      toast.error('Failed to delete invoices. Please try again.', {
-        duration: 4000,
-        icon: '❌'
-      });
-    } finally {
-      setBulkDeleteAlert(false);
-      toast.dismiss('bulkDeleteProgress');
-    }
-  };
-
-  const handleDownloadInvoice = async (invoice) => {
-    try {
-      const content = document.createElement('div');
-      content.innerHTML = `
-        <div class="invoice-content" style="padding: 40px; font-family: Arial, sans-serif;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #333; margin: 0;">InvoiceVault</h1>
-            <p style="color: #666; margin: 10px 0;">Invoice Details</p>
-          </div>
-          
-          <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
-            <div>
-              <h3 style="color: #333; margin: 0 0 10px 0;">Vendor Details</h3>
-              <p style="margin: 5px 0;">${invoice.vendor.name}</p>
-              <p style="margin: 5px 0;">${invoice.vendor.address || ''}</p>
-              <p style="margin: 5px 0;">${invoice.vendor.city || ''}, ${invoice.vendor.state || ''}</p>
-              <p style="margin: 5px 0;">${invoice.vendor.country || ''}</p>
-            </div>
-            <div style="text-align: right;">
-              <h2 style="color: #333; margin: 0 0 10px 0;">Invoice #${invoice.id}</h2>
-              <p style="margin: 5px 0;">Date: ${invoice.purchaseDate}</p>
-              <p style="margin: 5px 0;">Status: ${invoice.status.toUpperCase()}</p>
-            </div>
-          </div>
-
-          <div style="margin-bottom: 40px;">
-            <h3 style="color: #333; margin: 0 0 15px 0;">Purchase Details</h3>
-            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 4px;">
-              <h4 style="margin: 0 0 10px 0;">${invoice.title}</h4>
-              <p style="margin: 5px 0;"><strong>Amount:</strong> ${invoice.amount}</p>
-              <p style="margin: 5px 0;"><strong>Payment Mode:</strong> ${invoice.paymentMode.replace('_', ' ').toUpperCase()}</p>
-              <p style="margin: 5px 0;"><strong>Category:</strong> ${invoice.category}</p>
-              ${invoice.warrantyPeriod ? `<p style="margin: 5px 0;"><strong>Warranty Period:</strong> ${invoice.warrantyPeriod}</p>` : ''}
-            </div>
-          </div>
-
-          <div style="color: #666; font-size: 12px; text-align: center; margin-top: 40px;">
-            <p>This is a computer-generated document. No signature is required.</p>
-            <p>Generated via InvoiceVault on ${new Date().toLocaleDateString()}</p>
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(content);
-      await generatePDF(content, `invoice-${invoice.id.replace('#', '')}`);
-      document.body.removeChild(content);
-
-      addNotification({
-        type: 'success',
-        message: `Invoice ${invoice.id} downloaded successfully`,
-        icon: <FiDownload size={16} />
-      });
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      addNotification({
-        type: 'error',
-        message: `Failed to download invoice ${invoice.id}`,
-        icon: <FiDownload size={16} />
-      });
-    }
-  };
-
   const handleBulkDownload = () => {
     // Here you would typically generate and download multiple invoice PDFs
     addNotification({
@@ -230,6 +132,24 @@ const Invoices = () => {
       message: `${selectedInvoices.length} invoices downloaded successfully`,
       icon: <FiDownload size={16} />
     });
+  };
+
+  const handleDownloadInvoice = async (invoice) => {
+    try {
+      // Navigate to invoice view with download parameter
+      navigate(`/dashboard/invoice/${invoice.id.replace('#', '')}?download=true`);
+      
+      toast.success(`Invoice ${invoice.id} download started`, {
+        duration: 4000,
+        icon: '📥'
+      });
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      toast.error('Failed to download invoice. Please try again.', {
+        duration: 4000,
+        icon: '❌'
+      });
+    }
   };
 
   const handleFilterChange = (field, value) => {
@@ -293,27 +213,37 @@ const Invoices = () => {
   };
 
   // Filter invoices based on search and filters
-  const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = searchQuery === '' || 
-      invoice.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      invoice.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      invoice.vendor.name.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter(invoice => {
+      // Search filter
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = 
+        invoice.id.toLowerCase().includes(searchLower) ||
+        invoice.title.toLowerCase().includes(searchLower) ||
+        invoice.vendor.name.toLowerCase().includes(searchLower);
 
-    const matchesStatus = filters.status === '' || invoice.status === filters.status;
-    const matchesCategory = filters.category === '' || invoice.category === filters.category;
-    const matchesPaymentMode = filters.paymentMode === '' || invoice.paymentMode === filters.paymentMode;
-    
-    // Convert dates to timestamps for comparison
-    const invoiceDate = new Date(invoice.purchaseDate).getTime();
-    const startDate = filters.dateRange.start ? new Date(filters.dateRange.start).getTime() : null;
-    const endDate = filters.dateRange.end ? new Date(filters.dateRange.end).setHours(23, 59, 59, 999) : null;
-    
-    const matchesDateRange = 
-      (!startDate || invoiceDate >= startDate) &&
-      (!endDate || invoiceDate <= endDate);
+      if (!matchesSearch) return false;
 
-    return matchesSearch && matchesStatus && matchesCategory && matchesPaymentMode && matchesDateRange;
-  });
+      // Status filter
+      if (filters.status && invoice.status !== filters.status) return false;
+
+      // Category filter
+      if (filters.category && invoice.category !== filters.category) return false;
+
+      // Payment mode filter
+      if (filters.paymentMode && invoice.paymentMode !== filters.paymentMode) return false;
+
+      // Date range filter
+      if (filters.dateRange.start && filters.dateRange.end) {
+        const invoiceDate = new Date(invoice.purchaseDate);
+        const startDate = new Date(filters.dateRange.start);
+        const endDate = new Date(filters.dateRange.end);
+        if (invoiceDate < startDate || invoiceDate > endDate) return false;
+      }
+
+      return true;
+    });
+  }, [invoices, searchQuery, filters]);
 
   const calculateWarrantyDaysLeft = (purchaseDate, warrantyPeriod) => {
     if (!warrantyPeriod || warrantyPeriod === 'N/A') return null;
@@ -352,6 +282,73 @@ const Invoices = () => {
       }
     });
   }, [invoices]);
+
+  const BulkActions = () => {
+    const selectedCount = selectedInvoices.length;
+    
+    if (selectedCount === 0) return null;
+    
+    return (
+      <div className="bulk-actions">
+        <button 
+          className="bulk-action-btn"
+          onClick={handleBulkDownload}
+        >
+          <FiDownload size={16} />
+          Download Selected
+        </button>
+        <button 
+          className="bulk-action-btn delete"
+          onClick={handleBulkDelete}
+        >
+          <FiTrash2 size={16} />
+          Delete Selected
+        </button>
+        <span className="selected-count">
+          {selectedCount} {selectedCount === 1 ? 'item' : 'items'} selected
+        </span>
+      </div>
+    );
+  };
+
+  const confirmBulkDelete = async () => {
+    try {
+      toast.loading('Deleting invoices...', {
+        id: 'bulkDeleteProgress'
+      });
+
+      // Get clean IDs (remove '#' prefix)
+      const cleanIds = selectedInvoices.map(id => id.replace('#', ''));
+
+      // Delete from Supabase
+      const { error } = await supabase
+        .from('invoices')
+        .delete()
+        .in('id', cleanIds);
+
+      if (error) throw error;
+
+      // Update local state
+      setInvoices(prevInvoices => 
+        prevInvoices.filter(inv => !selectedInvoices.includes(inv.id))
+      );
+      setSelectedInvoices([]); // Clear selection
+
+      toast.success(`Successfully deleted ${selectedInvoices.length} invoices! 🗑️`, {
+        duration: 4000,
+        icon: '✅'
+      });
+    } catch (error) {
+      console.error('Error deleting invoices:', error);
+      toast.error('Failed to delete invoices. Please try again.', {
+        duration: 4000,
+        icon: '❌'
+      });
+    } finally {
+      setBulkDeleteAlert(false);
+      toast.dismiss('bulkDeleteProgress');
+    }
+  };
 
   return (
     <div className="invoices-container p-4">
@@ -650,26 +647,7 @@ const Invoices = () => {
         </div>
       </div>
 
-      <div className="bulk-actions">
-        {selectedInvoices.length > 0 && (
-          <>
-            <button 
-              className="bulk-action-btn"
-              onClick={handleBulkDownload}
-            >
-              <FiDownload size={16} />
-              Download ({selectedInvoices.length})
-            </button>
-            <button 
-              className="bulk-action-btn delete"
-              onClick={handleBulkDelete}
-            >
-              <FiTrash2 size={16} />
-              Delete ({selectedInvoices.length})
-            </button>
-          </>
-        )}
-      </div>
+      <BulkActions />
 
       <CreateInvoiceModal 
         isOpen={isCreateModalOpen}
