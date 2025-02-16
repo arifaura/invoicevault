@@ -4,24 +4,25 @@ import './CreateInvoiceModal.css';
 import { supabase } from '../../utils/supabaseClient';
 import { useNotifications } from '../../context/NotificationContext';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
 
-const CreateInvoiceModal = ({ isOpen, onClose, invoice = null }) => {
+const CreateInvoiceModal = ({ isOpen, onClose, invoice = null, initialData }) => {
   const { addNotification } = useNotifications();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
-    vendor: {
-      name: '',
-      shortName: ''
-    },
+    invoice_number: '',
+    vendor_name: '',
     amount: '',
-    purchaseDate: '',
-    paymentMode: '',
+    currency: 'INR',
+    purchase_date: '',
+    payment_mode: '',
     status: '',
     category: '',
-    warrantyPeriod: '',
+    warranty_period: '',
     notes: '',
-    attachments: [],
-    // Add any additional fields you want to track
+    attachments: []
   });
 
   const [files, setFiles] = useState({
@@ -29,23 +30,29 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null }) => {
   });
 
   useEffect(() => {
-    if (invoice) {
-      // Pre-fill form with existing invoice data
+    if (initialData) {
+      // Set form data from the initialData
       setFormData({
-        title: invoice.title || '',
-        vendor: invoice.vendor || { name: '', shortName: '' },
-        amount: invoice.amount || '',
-        purchaseDate: invoice.purchaseDate || '',
-        paymentMode: invoice.paymentMode || '',
-        status: invoice.status || '',
-        category: invoice.category || '',
-        warrantyPeriod: invoice.warrantyPeriod || '',
-        notes: invoice.notes || '',
-        attachments: invoice.attachments || [],
-        // Pre-fill any additional fields
+        title: initialData.formData.title || '',
+        vendor_name: initialData.formData.vendor_name || '',
+        amount: initialData.formData.amount || '',
+        currency: initialData.formData.currency || 'INR',
+        purchase_date: initialData.formData.purchase_date || '',
+        payment_mode: initialData.formData.payment_mode || '',
+        status: initialData.formData.status || '',
+        category: initialData.formData.category || '',
+        warranty_period: initialData.formData.warranty_period || '',
+        notes: initialData.formData.notes || ''
       });
+
+      // Set image if exists
+      if (initialData.formData.image_url) {
+        setFiles({
+          mainImage: initialData.formData.image_url
+        });
+      }
     }
-  }, [invoice]);
+  }, [initialData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -55,47 +62,136 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null }) => {
     }));
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
+    if (!file) return;
+
+    // Update UI immediately with preview
     setFiles(prev => ({ ...prev, mainImage: file }));
+  };
+
+  const uploadImageToStorage = async (file) => {
+    if (!file) return null;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Invalid file type. Please upload a JPG, PNG or PDF file.');
+      return null;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      toast.error('File is too large. Maximum size is 5MB.');
+      return null;
+    }
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      // Upload file to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('invoice-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('Storage upload error:', error);
+        throw error;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('invoice-images')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image. Please try again.');
+      return null;
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setLoading(true);
+
+      // Upload image first if exists
+      let imageUrl = null;
+      if (files.mainImage && files.mainImage instanceof File) {
+        imageUrl = await uploadImageToStorage(files.mainImage);
+      }
+
+      // Create vendor
+      const { data: vendor, error: vendorError } = await supabase
+        .from('vendors')
+        .insert([{
+          name: formData.vendor_name,
+          short_name: formData.vendor_name.substring(0, 2).toUpperCase(),
+          created_by: user.id
+        }])
+        .select()
+        .single();
+
+      if (vendorError) throw vendorError;
+
+      // Prepare invoice data
+      const invoiceData = {
+        title: formData.title,
+        vendor_id: vendor.id,
+        amount: formData.amount,
+        currency: formData.currency,
+        purchase_date: formData.purchase_date,
+        payment_mode: formData.payment_mode,
+        status: formData.status,
+        category: formData.category,
+        warranty_period: formData.warranty_period,
+        notes: formData.notes,
+        created_by: user.id,
+        updated_at: new Date().toISOString(),
+        invoice_number: invoice?.invoice_number || `INV-${Date.now()}`
+      };
+
+      // Only add image_url if we have one
+      if (imageUrl || invoice?.image_url) {
+        invoiceData.image_url = imageUrl || invoice.image_url;
+      }
+
       if (invoice) {
         // Update existing invoice
         const { error } = await supabase
           .from('invoices')
-          .update(formData)
+          .update(invoiceData)
           .eq('id', invoice.id);
 
         if (error) throw error;
-
-        toast.success('Invoice updated successfully! 📝', {
-          duration: 4000,
-          icon: '✅'
-        });
+        toast.success('Invoice updated successfully!');
       } else {
         // Create new invoice
         const { error } = await supabase
           .from('invoices')
-          .insert([formData]);
+          .insert([{
+            ...invoiceData,
+            created_at: new Date().toISOString()
+          }]);
 
         if (error) throw error;
-
-        toast.success('New invoice created! 🎉', {
-          duration: 4000,
-          icon: '✅'
-        });
+        toast.success('Invoice created successfully!');
       }
+
       onClose();
     } catch (error) {
       console.error('Error saving invoice:', error);
-      toast.error(`Failed to ${invoice ? 'update' : 'create'} invoice. Please try again.`, {
-        duration: 4000,
-        icon: '❌'
-      });
+      toast.error(error.message || 'Failed to save invoice');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -176,8 +272,8 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null }) => {
                 <input
                   type="date"
                   id="purchaseDate"
-                  name="purchaseDate"
-                  value={formData.purchaseDate}
+                  name="purchase_date"
+                  value={formData.purchase_date}
                   onChange={handleInputChange}
                   required
                 />
@@ -188,9 +284,10 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null }) => {
               <input
                 type="text"
                 id="vendorName"
-                name="vendorName"
-                value={formData.vendor.name}
+                name="vendor_name"
+                value={formData.vendor_name}
                 onChange={handleInputChange}
+                placeholder="Enter vendor name"
                 required
               />
             </div>
@@ -204,8 +301,8 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null }) => {
                 <label htmlFor="paymentMode">Payment Mode*</label>
                 <select
                   id="paymentMode"
-                  name="paymentMode"
-                  value={formData.paymentMode}
+                  name="payment_mode"
+                  value={formData.payment_mode}
                   onChange={handleInputChange}
                   required
                 >
@@ -258,8 +355,8 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null }) => {
               <input
                 type="text"
                 id="invoiceNumber"
-                name="invoiceNumber"
-                value={formData.invoiceNumber}
+                name="invoice_number"
+                value={formData.invoice_number}
                 onChange={handleInputChange}
               />
             </div>
@@ -273,8 +370,8 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null }) => {
               <input
                 type="text"
                 id="warrantyPeriod"
-                name="warrantyPeriod"
-                value={formData.warrantyPeriod}
+                name="warranty_period"
+                value={formData.warranty_period}
                 onChange={handleInputChange}
                 placeholder="e.g., 1 year, 6 months"
               />
@@ -320,8 +417,8 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null }) => {
               <label htmlFor="comments">Additional Comments</label>
               <textarea
                 id="comments"
-                name="comments"
-                value={formData.comments}
+                name="notes"
+                value={formData.notes}
                 onChange={handleInputChange}
                 rows="3"
                 placeholder="Add any additional notes or remarks..."

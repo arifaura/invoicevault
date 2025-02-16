@@ -306,7 +306,8 @@ const Settings = () => {
                   <input
                     type="email"
                     value={profile.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    disabled
+                    className="form-control disabled"
                     placeholder="Enter your email"
                   />
                 </div>

@@ -8,6 +8,8 @@ import CreateInvoiceModal from './CreateInvoiceModal';
 import InvoiceContent from '../Invoice/InvoiceContent';
 import './InvoiceView.css';
 import { generatePDF } from '../../utils/pdfGenerator';
+import { supabase } from '../../utils/supabaseClient';
+import { toast } from 'react-hot-toast';
 
 const InvoiceView = () => {
   const navigate = useNavigate();
@@ -21,50 +23,33 @@ const InvoiceView = () => {
   const contentRef = useRef(null);
 
   useEffect(() => {
-    const fetchInvoice = async () => {
-      try {
-        // Replace this with your actual API call
-        const mockInvoices = {
-          'INV-2024001': {
-            id: '#INV-2024001',
-            title: 'iPhone 15 Pro',
-            purchaseDate: 'Jan 01, 2024',
-            vendor: {
-              name: 'Apple Store',
-              shortName: 'AS',
-              address: 'Mall of India',
-              city: 'Noida',
-              state: 'UP',
-              zip: '201301',
-              country: 'India'
-            },
-            paymentMode: 'google_pay',
-            amount: 139900.00,
-            currency: 'INR',
-            invoiceNumber: 'AP2024001',
-            warrantyPeriod: '1 year',
-            category: 'electronics',
-            comments: 'Extended warranty purchased with AppleCare+',
-            status: 'paid',
-          }
-          // Add more mock invoices as needed
-        };
-
-        const invoiceData = mockInvoices[id];
-        if (!invoiceData) {
-          throw new Error('Invoice not found');
-        }
-        setInvoice(invoiceData);
-      } catch (error) {
-        console.error('Error fetching invoice:', error);
-        // Handle error (show notification, redirect, etc.)
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInvoice();
+    if (id) {
+      fetchInvoice();
+    }
   }, [id]);
+
+  const fetchInvoice = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          vendor:vendors(*)
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      setInvoice(data);
+    } catch (error) {
+      console.error('Error fetching invoice:', error);
+      toast.error('Failed to load invoice');
+      navigate('/dashboard/invoices');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);

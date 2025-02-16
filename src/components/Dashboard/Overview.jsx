@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiPlus, FiDownload, FiTrash2, FiEdit2, FiEye } from 'react-icons/fi';
 import { RiFileListLine, RiUserLine, RiMoneyDollarCircleLine } from 'react-icons/ri';
@@ -19,113 +19,67 @@ const Overview = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [recentInvoices, setRecentInvoices] = useState([
-    {
-      id: '#INV-2024001',
-      title: 'iPhone 15 Pro',
-      vendor: {
-        name: 'Apple Store',
-        shortName: 'AS'
-      },
-      amount: '₹139,900.00',
-      purchaseDate: '2024-01-01',
-      paymentMode: 'google_pay',
-      status: 'paid',
-      category: 'electronics',
-      warrantyPeriod: '1 year'
-    },
-    {
-      id: '#INV-2024002',
-      title: 'Monthly Groceries',
-      vendor: {
-        name: 'DMart',
-        shortName: 'DM'
-      },
-      amount: '₹5,400.00',
-      purchaseDate: '2024-01-05',
-      paymentMode: 'phone_pe',
-      status: 'pending',
-      category: 'groceries',
-      warrantyPeriod: null
-    },
-    {
-      id: '#INV-2024003',
-      title: 'Samsung TV',
-      vendor: {
-        name: 'Croma',
-        shortName: 'CR'
-      },
-      amount: '₹45,999.00',
-      purchaseDate: '2023-11-01',
-      paymentMode: 'credit_card',
-      status: 'paid',
-      category: 'electronics',
-      warrantyPeriod: '6 months'
-    }
-  ]);
-
-  const stats = [
-    {
-      title: 'Total Invoices',
-      value: '3',
-      icon: <RiFileListLine size={24} />,
-      color: 'blue'
-    },
-    {
-      title: 'Pending',
-      value: '1',
-      icon: <RiMoneyDollarCircleLine size={24} />,
-      color: 'yellow'
-    },
-    {
-      title: 'Paid',
-      value: '2',
-      icon: <HiOutlineDocumentReport size={24} />,
-      color: 'green'
-    },
-    {
-      title: 'Emi',
-      value: '0',
-      icon: <RiUserLine size={24} />,
-      color: 'red'
-    }
-  ];
-
+  const [recentInvoices, setRecentInvoices] = useState([]);
   const [deleteAlert, setDeleteAlert] = useState({ show: false, invoice: null });
+
+  // Calculate stats from invoices data
+  const stats = useMemo(() => {
+    const totalInvoices = recentInvoices.length;
+    const pendingInvoices = recentInvoices.filter(invoice => invoice.status === 'pending').length;
+    const paidInvoices = recentInvoices.filter(invoice => invoice.status === 'paid').length;
+    const emiInvoices = recentInvoices.filter(invoice => invoice.status === 'emi').length;
+
+    return [
+      {
+        title: 'Total Invoices',
+        value: totalInvoices.toString(),
+        icon: <RiFileListLine size={24} />,
+        color: 'blue'
+      },
+      {
+        title: 'Pending',
+        value: pendingInvoices.toString(),
+        icon: <RiMoneyDollarCircleLine size={24} />,
+        color: 'yellow'
+      },
+      {
+        title: 'Paid',
+        value: paidInvoices.toString(),
+        icon: <HiOutlineDocumentReport size={24} />,
+        color: 'green'
+      },
+      {
+        title: 'Emi',
+        value: emiInvoices.toString(),
+        icon: <RiUserLine size={24} />,
+        color: 'red'
+      }
+    ];
+  }, [recentInvoices]);
+
   const invoiceRef = useRef(null);
 
   useEffect(() => {
-    const fetchInvoices = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('invoices')
-          .select(`
-            *,
-            vendor:vendors(*)
-          `)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        if (error) throw error;
-
-        // Add the '#' prefix to the IDs for display
-        const formattedInvoices = data.map(invoice => ({
-          ...invoice,
-          id: `#${invoice.id}`
-        }));
-
-        setRecentInvoices(formattedInvoices);
-      } catch (error) {
-        console.error('Error fetching invoices:', error);
-        toast.error('Failed to load invoices', {
-          icon: '❌',
-          duration: 4000
-        });
-      }
-    };
-
     fetchInvoices();
   }, []);
+
+  const fetchInvoices = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          vendor:vendors(*)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setRecentInvoices(data);
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+      toast.error('Failed to load invoices');
+    }
+  };
 
   const handleViewInvoice = (invoiceId) => {
     navigate(`/dashboard/invoice/${invoiceId.replace('#', '')}`);
@@ -133,7 +87,7 @@ const Overview = () => {
 
   const handleEditInvoice = async (invoice) => {
     try {
-      // Fetch complete invoice details from Supabase
+      // Fetch complete invoice details including vendor
       const { data: fullInvoice, error } = await supabase
         .from('invoices')
         .select(`
@@ -145,93 +99,65 @@ const Overview = () => {
 
       if (error) throw error;
 
-      // Set the complete invoice data for editing
-      setSelectedInvoice(fullInvoice);
+      // Prepare the data for the form
+      const formData = {
+        title: fullInvoice.title || '',
+        vendor_name: fullInvoice.vendor?.name || '',
+        amount: fullInvoice.amount || '',
+        currency: fullInvoice.currency || 'INR',
+        purchase_date: fullInvoice.purchase_date || '',
+        payment_mode: fullInvoice.payment_mode || '',
+        status: fullInvoice.status || '',
+        category: fullInvoice.category || '',
+        warranty_period: fullInvoice.warranty_period || '',
+        notes: fullInvoice.notes || '',
+        image_url: fullInvoice.image_url || null
+      };
+
+      // Set the selected invoice with the form data
+      setSelectedInvoice({ ...fullInvoice, formData });
       setIsCreateModalOpen(true);
     } catch (error) {
       console.error('Error fetching invoice details:', error);
-      addNotification({
-        type: 'error',
-        message: 'Failed to load invoice details',
-        icon: <FiEdit2 size={16} />
-      });
-    }
-  };
-
-  const handleDeleteInvoice = async (invoice) => {
-    try {
-      // Remove the '#' from the invoice ID
-      const cleanId = invoice.id.replace('#', '');
-      
-      // First check if the invoice exists
-      const { data: existingInvoice, error: fetchError } = await supabase
-        .from('invoices')
-        .select()
-        .eq('id', cleanId)
-        .single();
-
-      if (fetchError) {
-        // If invoice doesn't exist in database, just remove it from local state
-        if (fetchError.code === 'PGRST116') {
-          setDeleteAlert({ show: true, invoice });
-          return;
-        }
-        throw fetchError;
-      }
-
-      if (existingInvoice) {
-        setDeleteAlert({ show: true, invoice });
-        toast.loading('Preparing to delete invoice...', {
-          id: 'deleteLoading'
-        });
-      } else {
-        throw new Error('Invoice not found');
-      }
-    } catch (error) {
-      console.error('Error preparing to delete invoice:', error);
-      toast.error('Failed to prepare invoice deletion. Please try again.', {
-        icon: '❌',
+      toast.error('Failed to load invoice details', {
         duration: 4000
       });
     }
   };
 
+  const handleDeleteInvoice = (invoice) => {
+    if (!invoice?.id) {
+      toast.error('Invalid invoice');
+      return;
+    }
+    setDeleteAlert({ show: true, invoice });
+  };
+
   const confirmDelete = async () => {
+    const invoice = deleteAlert.invoice;
+    
     try {
-      const invoice = deleteAlert.invoice;
-      const cleanId = invoice.id.replace('#', '');
+      toast.loading('Deleting invoice...', { id: 'deleteInvoice' });
       
-      toast.loading('Deleting invoice...', {
-        id: 'deleteProgress'
-      });
-      
-      // Delete from Supabase
       const { error } = await supabase
         .from('invoices')
         .delete()
-        .eq('id', cleanId);
+        .eq('id', invoice.id);
 
       if (error) throw error;
 
       // Update local state
-      const updatedInvoices = recentInvoices.filter(inv => inv.id !== invoice.id);
-      setRecentInvoices(updatedInvoices);
+      setRecentInvoices(prev => prev.filter(inv => inv.id !== invoice.id));
       
-      toast.success(`Invoice ${invoice.id} deleted successfully! 🗑️`, {
-        duration: 4000,
-        icon: '✅'
-      });
+      toast.success('Invoice deleted successfully!', { id: 'deleteInvoice' });
+      
+      // Refresh the invoices list
+      await fetchInvoices();
     } catch (error) {
       console.error('Error deleting invoice:', error);
-      toast.error('Failed to delete invoice. Please try again.', {
-        duration: 4000,
-        icon: '❌'
-      });
+      toast.error('Failed to delete invoice', { id: 'deleteInvoice' });
     } finally {
       setDeleteAlert({ show: false, invoice: null });
-      // Dismiss loading toasts
-      toast.dismiss('deleteLoading');
-      toast.dismiss('deleteProgress');
     }
   };
 
@@ -308,93 +234,127 @@ const Overview = () => {
         </button>
       </div>
 
-      {/* Recent Invoices */}
-      <div className="recent-invoices">
-        <h2 className="section-title mb-3">Recent Invoices</h2>
-        <div className="invoice-table-container">
-          <table className="invoice-table">
-            <thead>
-              <tr>
-                <th>Invoice</th>
-                <th>Vendor</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentInvoices.map((invoice) => (
-                <tr key={invoice.id}>
-                  <td className="invoice-title">
-                    <div className="vendor-avatar">{invoice.vendor.shortName}</div>
-                    <div className="invoice-details">
-                      <span className="invoice-id">{invoice.id}</span>
-                      <span className="invoice-name">{invoice.title}</span>
-                    </div>
-                  </td>
-                  <td>{invoice.vendor.name}</td>
-                  <td>{invoice.amount}</td>
-                  <td>
-                    <span className={`status-badge ${invoice.status}`}>
-                      {invoice.status}
-                    </span>
-                  </td>
-                  <td>{new Date(invoice.purchaseDate).toLocaleDateString()}</td>
-                  <td>
-                    <div className="table-actions">
-                      <button
-                        className="action-icon-btn view"
-                        onClick={() => handleViewInvoice(invoice.id)}
-                      >
-                        <FiEye size={16} />
-                      </button>
-                      <button
-                        className="action-icon-btn edit"
-                        onClick={() => handleEditInvoice(invoice)}
-                      >
-                        <FiEdit2 size={16} />
-                      </button>
-                      <button
-                        className="action-icon-btn download"
-                        onClick={() => handleDownloadInvoice(invoice)}
-                      >
-                        <FiDownload size={16} />
-                      </button>
-                      <button
-                        className="action-icon-btn delete"
-                        onClick={() => handleDeleteInvoice(invoice)}
-                      >
-                        <FiTrash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
+      {/* Recent Invoices Section */}
+      {recentInvoices.length > 0 && (
+        <div className="recent-invoices-section">
+          <div className="section-header">
+            <h2>Recent Invoices</h2>
+            <button
+              onClick={() => navigate('/dashboard/invoices')}
+              className="view-all-btn"
+            >
+              View All
+            </button>
+          </div>
+          <div className="table-container">
+            <table className="recent-invoices-table">
+              <thead>
+                <tr>
+                  <th>S.NO</th>
+                  <th>TITLE</th>
+                  <th>VENDOR</th>
+                  <th>IMAGE</th>
+                  <th>AMOUNT</th>
+                  <th>WARRANTY</th>
+                  <th>DATE</th>
+                  <th>ACTIONS</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentInvoices.map((invoice, index) => (
+                  <tr key={invoice?.id}>
+                    <td className="serial-number">{index + 1}</td>
+                    <td className="invoice-title">
+                      <div className="text-truncate">{invoice?.title || 'N/A'}</div>
+                    </td>
+                    <td className="vendor-name">
+                      <div className="text-truncate">{invoice?.vendor?.name || 'N/A'}</div>
+                    </td>
+                    <td className="invoice-image">
+                      {invoice?.image_url ? (
+                        <img 
+                          src={invoice.image_url} 
+                          alt={invoice.title} 
+                          className="invoice-thumbnail"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="no-image">
+                          <RiFileListLine size={20} />
+                        </div>
+                      )}
+                    </td>
+                    <td className="amount">₹{invoice?.amount || '0'}</td>
+                    <td className="warranty">
+                      {invoice?.warranty_period ? (
+                        <span className="warranty-badge">
+                          {invoice.warranty_period}
+                        </span>
+                      ) : (
+                        <span className="warranty-badge na">N/A</span>
+                      )}
+                    </td>
+                    <td>{invoice?.purchase_date ? new Date(invoice.purchase_date).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    }) : 'N/A'}</td>
+                    <td>
+                      <div className="table-actions">
+                        <button 
+                          className="action-icon-btn view" 
+                          title="View Invoice"
+                          onClick={() => handleViewInvoice(invoice?.id)}
+                        >
+                          <FiEye size={16} />
+                        </button>
+                        <button 
+                          className="action-icon-btn edit" 
+                          title="Edit Invoice"
+                          onClick={() => handleEditInvoice(invoice)}
+                        >
+                          <FiEdit2 size={16} />
+                        </button>
+                        <button 
+                          className="action-icon-btn download" 
+                          title="Download Invoice"
+                          onClick={() => handleDownloadInvoice(invoice)}
+                        >
+                          <FiDownload size={16} />
+                        </button>
+                        <button 
+                          className="action-icon-btn delete" 
+                          title="Delete Invoice"
+                          onClick={() => handleDeleteInvoice(invoice)}
+                        >
+                          <FiTrash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-
-      {/* Create/Edit Invoice Modal */}
-      {isCreateModalOpen && (
-        <CreateInvoiceModal
-          isOpen={isCreateModalOpen}
-          onClose={() => {
-            setIsCreateModalOpen(false);
-            setSelectedInvoice(null);
-          }}
-          invoice={selectedInvoice}
-        />
       )}
+      
+      <CreateInvoiceModal 
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setSelectedInvoice(null);
+        }}
+        mode={selectedInvoice ? 'edit' : 'create'}
+        initialData={selectedInvoice}
+      />
 
-      {/* Delete Confirmation Alert */}
       <CustomAlert
-        show={deleteAlert.show}
+        isOpen={deleteAlert.show}
         title="Delete Invoice"
-        message={`Are you sure you want to delete invoice ${deleteAlert.invoice?.id}?`}
+        message={`Are you sure you want to delete invoice "${deleteAlert.invoice?.title}"?`}
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteAlert({ show: false, invoice: null })}
+        onClose={() => setDeleteAlert({ show: false, invoice: null })}
       />
     </div>
   );

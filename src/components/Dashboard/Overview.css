@@ -174,9 +174,18 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 .invoice-title {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+.invoice-title .text-truncate {
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.5;
 }
 
 .vendor-avatar {
@@ -231,28 +240,59 @@ body::-webkit-scrollbar-thumb:hover {
 
 .table-actions {
     display: flex;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-start;
 }
 
 .action-icon-btn {
     width: 32px;
     height: 32px;
     border-radius: 6px;
-    border: none;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
 }
 
-.action-icon-btn.view { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
-.action-icon-btn.edit { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
-.action-icon-btn.download { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
-.action-icon-btn.delete { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-
 .action-icon-btn:hover {
-    transform: translateY(-2px);
+    background: var(--bg-hover);
+    color: var(--link-color);
+    border-color: var(--link-color);
+}
+
+.action-icon-btn.view:hover {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--link-color);
+    border-color: var(--link-color);
+}
+
+.action-icon-btn.edit:hover {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border-color: #10b981;
+}
+
+.action-icon-btn.download:hover {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border-color: #f59e0b;
+}
+
+.action-icon-btn.delete {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.action-icon-btn.delete:hover {
+    background-color: #ef4444;
+    color: white;
+    border-color: #ef4444;
+    transform: translateY(-1px);
 }
 
 /* Responsive Design */
@@ -408,4 +448,285 @@ body::-webkit-scrollbar-thumb:hover {
 .action-icon-btn.delete:hover { 
     background: rgba(239, 68, 68, 0.2);
     color: #dc2626;
+}
+
+.recent-invoices-section {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    margin-top: 2rem;
+    overflow: hidden;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-header h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.view-all-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    color: var(--link-color);
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.view-all-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--link-color);
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.recent-invoices-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.recent-invoices-table th,
+.recent-invoices-table td {
+    padding: 1rem;
+    text-align: left;
+}
+
+.recent-invoices-table th {
+    padding: 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.recent-invoices-table td {
+    padding: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    vertical-align: middle;
+    height: 64px; /* Fixed height for all rows */
+}
+
+.recent-invoices-table tr:hover td {
+    background: var(--bg-hover);
+}
+
+.table-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-icon-btn:hover {
+    background: var(--bg-hover);
+    color: var(--link-color);
+    border-color: var(--link-color);
+}
+
+.action-icon-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-color: #ef4444;
+}
+
+.invoice-number, .invoice-title {
+    font-weight: 500;
+}
+
+.amount {
+    font-family: monospace;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.serial-number {
+    text-align: center;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.text-truncate {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Column widths */
+.recent-invoices-table th:nth-child(1) { width: 60px; }   /* S.NO */
+.recent-invoices-table th:nth-child(2) { width: 300px; }  /* Title */
+.recent-invoices-table th:nth-child(3) { width: 150px; }  /* Vendor */
+.recent-invoices-table th:nth-child(4) { width: 80px; }   /* Image */
+.recent-invoices-table th:nth-child(5) { width: 100px; }  /* Amount */
+.recent-invoices-table th:nth-child(6) { width: 120px; }  /* Warranty */
+.recent-invoices-table th:nth-child(7) { width: 120px; }  /* Date */
+.recent-invoices-table th:nth-child(8) { width: 160px; }  /* Actions */
+
+@media (max-width: 1024px) {
+    .recent-invoices-table th:nth-child(4),
+    .recent-invoices-table td:nth-child(4) {
+        display: none;
+    }
+    
+    .warranty-badge {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .recent-invoices-table th:nth-child(6),
+    .recent-invoices-table td:nth-child(6) {
+        display: none;
+    }
+    
+    .recent-invoices-table th:nth-child(3),
+    .recent-invoices-table td:nth-child(3) {
+        max-width: 100px;
+    }
+}
+
+@media (max-width: 480px) {
+    .recent-invoices-table th:nth-child(7),
+    .recent-invoices-table td:nth-child(7) {
+        display: none;
+    }
+    
+    .text-truncate {
+        max-width: 80px;
+    }
+}
+
+.invoice-image {
+    width: 80px;
+    padding: 0.5rem !important;
+}
+
+.invoice-thumbnail {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.no-image {
+    width: 48px;
+    height: 48px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+}
+
+.recent-invoices-table th:first-child {
+    width: 60px;
+}
+
+.recent-invoices-table th:nth-child(2) {
+    width: 140px;
+}
+
+.recent-invoices-table th:nth-child(4) {
+    width: 80px;
+}
+
+.recent-invoices-table th:nth-child(5) {
+    width: 100px;
+}
+
+.recent-invoices-table th:nth-child(6) {
+    width: 120px;
+}
+
+.recent-invoices-table th:last-child {
+    width: 120px;
+}
+
+.amount {
+    font-family: monospace;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .invoice-image {
+        display: none;
+    }
+    
+    .recent-invoices-table th:nth-child(4),
+    .recent-invoices-table td:nth-child(4) {
+        display: none;
+    }
+    
+    .recent-invoices-table th,
+    .recent-invoices-table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .invoice-thumbnail,
+    .no-image {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+.vendor-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.warranty {
+    text-align: center;
+}
+
+.warranty-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--link-color);
+}
+
+.warranty-badge.na {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
 } 

@@ -29,56 +29,38 @@ const Invoices = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [deleteAlert, setDeleteAlert] = useState({ show: false, invoice: null });
   const [bulkDeleteAlert, setBulkDeleteAlert] = useState(false);
+  const [invoices, setInvoices] = useState([]);
 
-  // Mock data - replace with actual data later
-  const [invoices, setInvoices] = useState([
-    {
-      id: '#INV-2024001',
-      title: 'iPhone 15 Pro',
-      vendor: {
-        name: 'Apple Store',
-        shortName: 'AS'
-      },
-      amount: '₹139,900.00',
-      purchaseDate: '2024-01-01',
-      paymentMode: 'google_pay',
-      status: 'paid',
-      category: 'electronics',
-      warrantyPeriod: '1 year'
-    },
-    {
-      id: '#INV-2024002',
-      title: 'Monthly Groceries',
-      vendor: {
-        name: 'DMart',
-        shortName: 'DM'
-      },
-      amount: '₹5,400.00',
-      purchaseDate: '2024-01-05',
-      paymentMode: 'phone_pe',
-      status: 'pending',
-      category: 'groceries',
-      warrantyPeriod: null
-    },
-    {
-      id: '#INV-2024003',
-      title: 'Samsung TV',
-      vendor: {
-        name: 'Croma',
-        shortName: 'CR'
-      },
-      amount: '₹45,999.00',
-      purchaseDate: '2024-11-01',
-      paymentMode: 'credit_card',
-      status: 'paid',
-      category: 'electronics',
-      warrantyPeriod: '6 months'
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
+
+  const fetchInvoices = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          vendor:vendors(*)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setInvoices(data);
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+      toast.error('Failed to load invoices');
     }
-  ]);
+  };
+
+  const getCleanId = (id) => {
+    if (!id) return '';
+    return typeof id === 'string' ? id.replace('#', '') : id.toString();
+  };
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedInvoices(filteredInvoices.map(invoice => invoice.id));
+      setSelectedInvoices(filteredInvoices.map(invoice => invoice?.id || ''));
     } else {
       setSelectedInvoices([]);
     }
@@ -95,15 +77,19 @@ const Invoices = () => {
   };
 
   const handleViewInvoice = (invoiceId) => {
-    navigate(`/dashboard/invoice/${invoiceId.replace('#', '')}`);
+    if (!invoiceId) return;
+    const cleanId = getCleanId(invoiceId);
+    navigate(`/dashboard/invoice/${cleanId}`);
   };
 
   const handleEditInvoice = (invoice) => {
+    if (!invoice) return;
     setSelectedInvoice(invoice);
     setIsCreateModalOpen(true);
   };
 
   const handleDeleteInvoice = (invoice) => {
+    if (!invoice) return;
     setDeleteAlert({ show: true, invoice });
   };
 
@@ -114,7 +100,7 @@ const Invoices = () => {
     
     addNotification({
       type: 'success',
-      message: `Invoice ${invoice.id} deleted successfully`,
+      message: `Invoice ${invoice.invoice_number} deleted successfully`,
       icon: <FiTrash2 size={16} />
     });
     
@@ -135,11 +121,13 @@ const Invoices = () => {
   };
 
   const handleDownloadInvoice = async (invoice) => {
+    if (!invoice?.id) return;
     try {
       // Navigate to invoice view with download parameter
-      navigate(`/dashboard/invoice/${invoice.id.replace('#', '')}?download=true`);
+      const cleanId = getCleanId(invoice.id);
+      navigate(`/dashboard/invoice/${cleanId}?download=true`);
       
-      toast.success(`Invoice ${invoice.id} download started`, {
+      toast.success(`Invoice ${invoice.invoice_number} download started`, {
         duration: 4000,
         icon: '📥'
       });
@@ -317,8 +305,14 @@ const Invoices = () => {
         id: 'bulkDeleteProgress'
       });
 
-      // Get clean IDs (remove '#' prefix)
-      const cleanIds = selectedInvoices.map(id => id.replace('#', ''));
+      // Get clean IDs (remove '#' prefix and filter out invalid IDs)
+      const cleanIds = selectedInvoices
+        .filter(id => id) // Remove falsy values
+        .map(id => getCleanId(id));
+
+      if (cleanIds.length === 0) {
+        throw new Error('No valid invoices selected');
+      }
 
       // Delete from Supabase
       const { error } = await supabase
@@ -330,11 +324,11 @@ const Invoices = () => {
 
       // Update local state
       setInvoices(prevInvoices => 
-        prevInvoices.filter(inv => !selectedInvoices.includes(inv.id))
+        prevInvoices.filter(inv => !selectedInvoices.includes(inv?.id))
       );
       setSelectedInvoices([]); // Clear selection
 
-      toast.success(`Successfully deleted ${selectedInvoices.length} invoices! 🗑️`, {
+      toast.success(`Successfully deleted ${cleanIds.length} invoices! 🗑️`, {
         duration: 4000,
         icon: '✅'
       });
@@ -514,91 +508,38 @@ const Invoices = () => {
             <table className="invoice-table">
               <thead>
                 <tr>
-                  <th className="checkbox-cell">
-                    <input 
-                      type="checkbox" 
-                      onChange={handleSelectAll}
-                      checked={selectedInvoices.length === filteredInvoices.length && filteredInvoices.length > 0}
-                    />
-                  </th>
-                  <th>Invoice No.</th>
-                  <th>Item/Title</th>
+                  <th>S.No</th>
+                  <th>Title</th>
                   <th>Vendor</th>
                   <th>Amount</th>
-                  <th>Purchase Date</th>
-                  <th>Payment Mode</th>
-                  <th>Category</th>
-                  <th>Warranty</th>
-                  <th>Warranty Status</th>
                   <th>Status</th>
+                  <th>Date</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredInvoices.map((invoice) => (
-                  <tr key={invoice.id}>
-                    <td className="checkbox-cell">
-                      <input 
-                        type="checkbox"
-                        checked={selectedInvoices.includes(invoice.id)}
-                        onChange={() => handleSelect(invoice.id)}
-                      />
-                    </td>
-                    <td>{invoice.id}</td>
-                    <td>{invoice.title}</td>
+                {filteredInvoices.map((invoice, index) => (
+                  <tr key={invoice?.id || index}>
+                    <td className="serial-number">{index + 1}</td>
+                    <td>{invoice?.title || 'N/A'}</td>
+                    <td>{invoice?.vendor?.name || 'N/A'}</td>
+                    <td>₹{invoice?.amount || '0'}</td>
                     <td>
-                      <div className="vendor-info">
-                        <div className="vendor-avatar">{invoice.vendor.shortName}</div>
-                        <div className="vendor-name">{invoice.vendor.name}</div>
-                      </div>
-                    </td>
-                    <td>{invoice.amount}</td>
-                    <td>{new Date(invoice.purchaseDate).toLocaleDateString()}</td>
-                    <td>
-                      <span className={`payment-mode ${invoice.paymentMode}`}>
-                        {invoice.paymentMode.split('_').map(word => 
-                          word.charAt(0).toUpperCase() + word.slice(1)
-                        ).join(' ')}
+                      <span className={`status-badge ${invoice?.status || ''}`}>
+                        {invoice?.status ? invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) : 'N/A'}
                       </span>
                     </td>
-                    <td>
-                      <span className="category-badge">
-                        {invoice.category.charAt(0).toUpperCase() + invoice.category.slice(1)}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="warranty-text">
-                        {invoice.warrantyPeriod || 'N/A'}
-                      </span>
-                    </td>
-                    <td>
-                      {invoice.warrantyPeriod && invoice.warrantyPeriod !== 'N/A' ? (
-                        <span className={`warranty-status-badge ${
-                          calculateWarrantyDaysLeft(invoice.purchaseDate, invoice.warrantyPeriod) <= 0 
-                            ? 'expired'
-                            : calculateWarrantyDaysLeft(invoice.purchaseDate, invoice.warrantyPeriod) <= 30 
-                            ? 'expiring-soon'
-                            : 'active'
-                        }`}>
-                          {calculateWarrantyDaysLeft(invoice.purchaseDate, invoice.warrantyPeriod) <= 0
-                            ? 'Expired'
-                            : `${calculateWarrantyDaysLeft(invoice.purchaseDate, invoice.warrantyPeriod)} days left`}
-                        </span>
-                      ) : (
-                        <span className="warranty-status-badge na">N/A</span>
-                      )}
-                    </td>
-                    <td>
-                      <span className={`status-badge ${invoice.status}`}>
-                        {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                      </span>
-                    </td>
+                    <td>{invoice?.purchase_date ? new Date(invoice.purchase_date).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    }) : 'N/A'}</td>
                     <td>
                       <div className="table-actions">
                         <button 
                           className="action-icon-btn" 
                           title="View Invoice"
-                          onClick={() => handleViewInvoice(invoice.id)}
+                          onClick={() => handleViewInvoice(invoice?.id)}
                         >
                           <FiEye size={16} />
                         </button>
@@ -662,7 +603,7 @@ const Invoices = () => {
       <CustomAlert
         show={deleteAlert.show}
         title="Delete Invoice"
-        message={`Are you sure you want to delete invoice ${deleteAlert.invoice?.id}?`}
+        message={`Are you sure you want to delete invoice ${deleteAlert.invoice?.invoice_number}?`}
         onConfirm={() => {
           confirmDelete();
           // Remove the default confirm
