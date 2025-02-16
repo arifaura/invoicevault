@@ -61,6 +61,17 @@ const Overview = () => {
 
   useEffect(() => {
     fetchInvoices();
+
+    // Add event listener for invoice refresh
+    const handleRefresh = () => {
+      fetchInvoices();
+    };
+    window.addEventListener('refresh-invoices', handleRefresh);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('refresh-invoices', handleRefresh);
+    };
   }, []);
 
   const fetchInvoices = async () => {

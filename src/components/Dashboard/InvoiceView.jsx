@@ -1,15 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
-import { FiArrowLeft, FiDownload, FiEdit2, FiShare2, FiX, FiFile, FiCopy } from 'react-icons/fi';
-import { FaWhatsapp, FaTelegram } from 'react-icons/fa';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
-import CreateInvoiceModal from './CreateInvoiceModal';
-import InvoiceContent from '../Invoice/InvoiceContent';
-import './InvoiceView.css';
-import { generatePDF } from '../../utils/pdfGenerator';
-import { supabase } from '../../utils/supabaseClient';
-import { toast } from 'react-hot-toast';
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { FiArrowLeft, FiDownload, FiEdit2, FiShare2 } from "react-icons/fi";
+import { FaWhatsapp, FaTelegram } from "react-icons/fa";
+import CreateInvoiceModal from "./CreateInvoiceModal";
+import InvoiceContent from "../Invoice/InvoiceContent";
+import "./InvoiceView.css";
+import { generatePDF } from "../../utils/pdfGenerator";
+import { supabase } from "../../utils/supabaseClient";
+import { toast } from "react-hot-toast";
 
 const InvoiceView = () => {
   const navigate = useNavigate();
@@ -32,20 +30,22 @@ const InvoiceView = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('invoices')
-        .select(`
+        .from("invoices")
+        .select(
+          `
           *,
           vendor:vendors(*)
-        `)
-        .eq('id', id)
+        `
+        )
+        .eq("id", id)
         .single();
 
       if (error) throw error;
       setInvoice(data);
     } catch (error) {
-      console.error('Error fetching invoice:', error);
-      toast.error('Failed to load invoice');
-      navigate('/dashboard/invoices');
+      console.error("Error fetching invoice:", error);
+      toast.error("Failed to load invoice");
+      navigate("/dashboard/invoices");
     } finally {
       setLoading(false);
     }
@@ -53,8 +53,8 @@ const InvoiceView = () => {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    const shouldDownload = searchParams.get('download') === 'true';
-    
+    const shouldDownload = searchParams.get("download") === "true";
+
     if (shouldDownload && invoice) {
       handleDownload();
       navigate(location.pathname, { replace: true });
@@ -64,21 +64,41 @@ const InvoiceView = () => {
   const handleDownload = async () => {
     try {
       if (!contentRef.current) return;
-      await generatePDF(contentRef.current, `invoice-${invoice.id.replace('#', '')}`);
+      await generatePDF(
+        contentRef.current,
+        `invoice-${invoice.id.replace("#", "")}`
+      );
     } catch (error) {
-      console.error('Error downloading invoice:', error);
+      console.error("Error downloading invoice:", error);
+      toast.error("Failed to download invoice");
     }
   };
 
   const handleShare = async (platform) => {
     setIsSharing(true);
     try {
-      // Share implementation
+      const invoiceUrl = window.location.href;
+      const message = `Check out this invoice: ${invoice.title}\n${invoiceUrl}`;
+
+      if (platform === "whatsapp") {
+        window.open(
+          `https://wa.me/?text=${encodeURIComponent(message)}`,
+          "_blank"
+        );
+      } else if (platform === "telegram") {
+        window.open(
+          `https://t.me/share/url?url=${encodeURIComponent(
+            invoiceUrl
+          )}&text=${encodeURIComponent(invoice.title)}`,
+          "_blank"
+        );
+      }
+    } catch (error) {
+      console.error("Error sharing:", error);
+      toast.error("Failed to share invoice");
+    } finally {
       setIsSharing(false);
       setShowShareOptions(false);
-    } catch (error) {
-      console.error('Error sharing:', error);
-      setIsSharing(false);
     }
   };
 
@@ -94,7 +114,7 @@ const InvoiceView = () => {
     return (
       <div className="invoice-view-container error">
         <h2>Invoice not found</h2>
-        <button onClick={() => navigate('/dashboard')} className="back-button">
+        <button onClick={() => navigate("/dashboard")} className="back-button">
           <FiArrowLeft /> Back to Dashboard
         </button>
       </div>
@@ -105,64 +125,47 @@ const InvoiceView = () => {
     <div className="invoice-view-container">
       <div className="invoice-view-header">
         <div className="header-left">
-          <button 
+          <button
             className="back-button"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate("/dashboard")}
           >
             <FiArrowLeft size={20} />
             <span>Back</span>
           </button>
-          <div className="invoice-header-info">
-            <h1>{invoice.title}</h1>
-            <span className="invoice-subtext">{invoice.id}</span>
-          </div>
         </div>
-        
+
         <div className="header-actions">
           <div className="share-wrapper">
-            <button 
+            <button
               className="action-button"
               onClick={() => setShowShareOptions(!showShareOptions)}
             >
               <FiShare2 size={18} />
-              <span>Share</span>
             </button>
             {showShareOptions && (
               <div className="share-options">
-                <button 
+                <button
                   className="share-option whatsapp"
-                  onClick={() => handleShare('whatsapp')}
+                  onClick={() => handleShare("whatsapp")}
                   disabled={isSharing}
                 >
-                  <FaWhatsapp size={18} />
+                  <FaWhatsapp size={20} />
                   <span>WhatsApp</span>
                 </button>
-                <button 
+                <button
                   className="share-option telegram"
-                  onClick={() => handleShare('telegram')}
+                  onClick={() => handleShare("telegram")}
                   disabled={isSharing}
                 >
-                  <FaTelegram size={18} />
+                  <FaTelegram size={20} />
                   <span>Telegram</span>
                 </button>
               </div>
             )}
           </div>
-          
-          <button 
-            className="action-button"
-            onClick={handleDownload}
-          >
+
+          <button className="action-button" onClick={handleDownload}>
             <FiDownload size={18} />
-            <span>Download</span>
-          </button>
-          
-          <button 
-            className="action-button primary"
-            onClick={() => setIsEditModalOpen(true)}
-          >
-            <FiEdit2 size={18} />
-            <span>Edit</span>
           </button>
         </div>
       </div>
@@ -172,7 +175,7 @@ const InvoiceView = () => {
       </div>
 
       {isEditModalOpen && (
-        <CreateInvoiceModal 
+        <CreateInvoiceModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           initialData={invoice}
@@ -183,4 +186,4 @@ const InvoiceView = () => {
   );
 };
 
-export default InvoiceView; 
+export default InvoiceView;

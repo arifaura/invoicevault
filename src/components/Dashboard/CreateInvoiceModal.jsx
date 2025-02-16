@@ -129,23 +129,43 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null, initialData }) =>
         imageUrl = await uploadImageToStorage(files.mainImage);
       }
 
-      // Create vendor
-      const { data: vendor, error: vendorError } = await supabase
-        .from('vendors')
-        .insert([{
-          name: formData.vendor_name,
-          short_name: formData.vendor_name.substring(0, 2).toUpperCase(),
-          created_by: user.id
-        }])
-        .select()
-        .single();
+      // If in edit mode, update existing vendor
+      let vendorId;
+      if (initialData) {
+        // Update existing vendor if name changed
+        if (formData.vendor_name !== initialData.formData.vendor_name) {
+          const { data: vendor, error: vendorError } = await supabase
+            .from('vendors')
+            .update({ name: formData.vendor_name })
+            .eq('id', initialData.vendor.id)
+            .select()
+            .single();
 
-      if (vendorError) throw vendorError;
+          if (vendorError) throw vendorError;
+          vendorId = vendor.id;
+        } else {
+          vendorId = initialData.vendor.id;
+        }
+      } else {
+        // Create new vendor
+        const { data: vendor, error: vendorError } = await supabase
+          .from('vendors')
+          .insert([{
+            name: formData.vendor_name,
+            short_name: formData.vendor_name.substring(0, 2).toUpperCase(),
+            created_by: user.id
+          }])
+          .select()
+          .single();
+
+        if (vendorError) throw vendorError;
+        vendorId = vendor.id;
+      }
 
       // Prepare invoice data
       const invoiceData = {
         title: formData.title,
-        vendor_id: vendor.id,
+        vendor_id: vendorId,
         amount: formData.amount,
         currency: formData.currency,
         purchase_date: formData.purchase_date,
@@ -154,42 +174,53 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null, initialData }) =>
         category: formData.category,
         warranty_period: formData.warranty_period,
         notes: formData.notes,
-        created_by: user.id,
-        updated_at: new Date().toISOString(),
-        invoice_number: invoice?.invoice_number || `INV-${Date.now()}`
+        updated_at: new Date().toISOString()
       };
 
       // Only add image_url if we have one
-      if (imageUrl || invoice?.image_url) {
-        invoiceData.image_url = imageUrl || invoice.image_url;
+      if (imageUrl || (initialData && initialData.formData.image_url)) {
+        invoiceData.image_url = imageUrl || initialData.formData.image_url;
       }
 
-      if (invoice) {
+      if (initialData) {
         // Update existing invoice
         const { error } = await supabase
           .from('invoices')
           .update(invoiceData)
-          .eq('id', invoice.id);
+          .eq('id', initialData.id);
 
         if (error) throw error;
-        toast.success('Invoice updated successfully!');
+        toast.success('Invoice updated successfully! 🎉', {
+          duration: 4000,
+          icon: '✅'
+        });
       } else {
         // Create new invoice
         const { error } = await supabase
           .from('invoices')
           .insert([{
             ...invoiceData,
-            created_at: new Date().toISOString()
+            created_by: user.id,
+            created_at: new Date().toISOString(),
+            invoice_number: `INV-${Date.now()}`
           }]);
 
         if (error) throw error;
-        toast.success('Invoice created successfully!');
+        toast.success('Invoice created successfully! 🎉', {
+          duration: 4000,
+          icon: '✅'
+        });
       }
 
       onClose();
+      // Trigger a refresh of the invoices list
+      window.dispatchEvent(new Event('refresh-invoices'));
     } catch (error) {
       console.error('Error saving invoice:', error);
-      toast.error(error.message || 'Failed to save invoice');
+      toast.error(error.message || 'Failed to save invoice', {
+        duration: 4000,
+        icon: '❌'
+      });
     } finally {
       setLoading(false);
     }

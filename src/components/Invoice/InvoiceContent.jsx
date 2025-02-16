@@ -1,95 +1,202 @@
-import React from 'react';
-import './InvoiceContent.css';
-import { formatCurrency } from '../../utils/formatters';
+import React from "react";
+import "./InvoiceContent.css";
+import { formatCurrency } from "../../utils/formatters";
+import {
+  FiCalendar,
+  FiHash,
+  FiTag,
+  FiClock,
+  FiDollarSign,
+  FiCreditCard,
+  FiBox,
+  FiShield,
+  FiFileText,
+} from "react-icons/fi";
 
 const InvoiceContent = ({ invoice, contentRef }) => {
+  if (!invoice) {
+    return <div className="loading">Loading invoice...</div>;
+  }
+
+  // Format payment mode
+  const formatPaymentMode = (mode) => {
+    if (!mode) return "N/A";
+    return mode.replace(/_/g, " ").toUpperCase();
+  };
+
   return (
-    <div className="invoice-content" ref={contentRef}>
-      <div className="invoice-header">
-        <div className="brand-section">
+    <div className="invoice-content modern" ref={contentRef}>
+      <div className="modern-header">
+        <div className="brand">
           <h1>InvoiceVault</h1>
-          <div className="invoice-meta">
-            <div className="invoice-id">#{invoice.id}</div>
-            <div className="invoice-date">{invoice.purchaseDate}</div>
+          <div className="invoice-number">
+            <FiHash />
+            <span>{invoice?.id || "N/A"}</span>
           </div>
         </div>
-        <div className="status-badge">
-          <span className={`status status-${invoice.status}`}>
-            {invoice.status.toUpperCase()}
-          </span>
+
+        <div className="header-meta">
+          <div className="meta-item">
+            <FiCalendar />
+            <span>
+              {new Date(invoice?.purchase_date).toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              }) || "N/A"}
+            </span>
+          </div>
+          <div
+            className={`status-badge ${
+              invoice?.status?.toLowerCase() || "pending"
+            }`}
+          >
+            {(invoice?.status || "PENDING").toUpperCase()}
+          </div>
         </div>
       </div>
-
-      <div className="invoice-grid">
-        <div className="grid-section vendor-info">
-          <h3>Vendor Details</h3>
-          <div className="vendor-card">
-            <div className="vendor-avatar">{invoice.vendor.shortName}</div>
-            <div className="vendor-details">
-              <h4>{invoice.vendor.name}</h4>
-              <address>
-                {invoice.vendor.address && <span>{invoice.vendor.address}</span>}
-                <span>
-                  {invoice.vendor.city}
-                  {invoice.vendor.state && `, ${invoice.vendor.state}`}
-                  {invoice.vendor.zip && ` ${invoice.vendor.zip}`}
-                </span>
-                {invoice.vendor.country && <span>{invoice.vendor.country}</span>}
-              </address>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid-section amount-info">
-          <h3>Amount</h3>
-          <div className="amount-display">
-            {formatCurrency(invoice.amount, invoice.currency)}
-          </div>
-          <div className="payment-mode">
-            via {invoice.paymentMode.replace('_', ' ').toUpperCase()}
-          </div>
-        </div>
-
-        <div className="grid-section purchase-info">
-          <h3>Purchase Details</h3>
-          <div className="details-list">
-            <div className="detail-item">
-              <span>Item</span>
-              <strong>{invoice.title}</strong>
-            </div>
-            <div className="detail-item">
-              <span>Category</span>
-              <strong>{invoice.category}</strong>
-            </div>
-            {invoice.warrantyPeriod && (
-              <div className="detail-item">
-                <span>Warranty</span>
-                <strong>{invoice.warrantyPeriod}</strong>
-              </div>
-            )}
-            <div className="detail-item">
-              <span>Invoice Number</span>
-              <strong>{invoice.invoiceNumber}</strong>
-            </div>
-          </div>
-        </div>
-
-        {invoice.comments && (
-          <div className="grid-section comments-section">
-            <h3>Additional Notes</h3>
-            <p>{invoice.comments}</p>
+      <div className="invoice-header-info d-flex justify-content-between">
+        <h1 className="align-self-center">{invoice.title}</h1>
+        {invoice?.image_url && (
+          <div>
+            <img
+              src={invoice.image_url}
+              alt={invoice.title}
+              className="img-fluid img-thumbnail"
+              style={{ width: "500px", height: "500px" }}
+            />
           </div>
         )}
       </div>
 
-      <div className="invoice-footer">
+      <div className="modern-content mt-3">
+        {/* Vendor Section */}
+        <div className="content-section">
+          <h2>Vendor Information</h2>
+          <div className="vendor-details modern">
+            <div className="vendor-avatar">
+              {invoice?.vendor?.short_name ||
+                invoice?.vendor?.name?.substring(0, 2) ||
+                "NA"}
+            </div>
+            <div className="vendor-info">
+              <h3>{invoice?.vendor?.name || "N/A"}</h3>
+              <div className="vendor-meta">
+                {invoice?.vendor?.address && <p>{invoice.vendor.address}</p>}
+                <p>
+                  {invoice?.vendor?.city || ""}
+                  {invoice?.vendor?.state && `, ${invoice.vendor.state}`}
+                  {invoice?.vendor?.zip && ` ${invoice.vendor.zip}`}
+                </p>
+                {invoice?.vendor?.country && <p>{invoice.vendor.country}</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Purchase Details Section */}
+        <div className="content-section">
+          <h2>Purchase Details</h2>
+          <div className="details-grid">
+            <div className="detail-item">
+              <div className="detail-icon">
+                <FiBox />
+              </div>
+              <div className="detail-content">
+                <label>Item/Title</label>
+                <span>{invoice?.title || "N/A"}</span>
+              </div>
+            </div>
+
+            <div className="detail-item">
+              <div className="detail-icon">
+                <FiTag />
+              </div>
+              <div className="detail-content">
+                <label>Category</label>
+                <span>{invoice?.category || "N/A"}</span>
+              </div>
+            </div>
+
+            <div className="detail-item">
+              <div className="detail-icon">
+                <FiDollarSign />
+              </div>
+              <div className="detail-content">
+                <label>Amount</label>
+                <span className="amount">
+                  {formatCurrency(
+                    invoice?.amount || 0,
+                    invoice?.currency || "INR"
+                  )}
+                </span>
+              </div>
+            </div>
+
+            <div className="detail-item">
+              <div className="detail-icon">
+                <FiCreditCard />
+              </div>
+              <div className="detail-content">
+                <label>Payment Mode</label>
+                <span>{formatPaymentMode(invoice?.payment_mode)}</span>
+              </div>
+            </div>
+
+            <div className="detail-item">
+              <div className="detail-icon">
+                <FiShield />
+              </div>
+              <div className="detail-content">
+                <label>Warranty Period</label>
+                <span>{invoice?.warranty_period || "N/A"}</span>
+              </div>
+            </div>
+
+            <div className="detail-item">
+              <div className="detail-icon">
+                <FiHash />
+              </div>
+              <div className="detail-content">
+                <label>Invoice Number</label>
+                <span>{invoice?.invoice_number || "N/A"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Notes Section */}
+        {invoice?.notes && (
+          <div className="content-section">
+            <h2>Additional Notes</h2>
+            <div className="notes-content">
+              <div className="detail-icon">
+                <FiFileText />
+              </div>
+              <p>{invoice.notes}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer Section */}
+      <div className="modern-footer">
         <div className="footer-content">
-          <p>This is a computer-generated document. No signature is required.</p>
-          <p>Generated via InvoiceVault on {new Date().toLocaleDateString()}</p>
+          <p>
+            This is a computer-generated document. No signature is required.
+          </p>
+          <p>
+            Generated via InvoiceVault on{" "}
+            {new Date().toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })}
+          </p>
         </div>
       </div>
     </div>
   );
 };
 
-export default InvoiceContent; 
+export default InvoiceContent;

@@ -14,6 +14,7 @@
   background-color: var(--bg-primary);
   border-radius: var(--spacing-2);
   box-shadow: var(--shadow-sm);
+  margin-top: 1rem;
 }
 
 .header-left {
@@ -60,18 +61,24 @@
 .action-button {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-4);
+  justify-content: center;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--border-color);
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  border-radius: var(--spacing-1);
+  border-radius: var(--spacing-2);
   cursor: pointer;
   transition: all 0.2s;
 }
 
+.action-button span {
+  display: none;
+}
+
 .action-button:hover {
   background-color: var(--bg-secondary);
+  transform: translateY(-1px);
 }
 
 .action-button.primary {
@@ -81,6 +88,7 @@
 }
 
 .action-button.primary:hover {
+  background-color: var(--link-color);
   opacity: 0.9;
 }
 
@@ -90,36 +98,57 @@
 
 .share-options {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 8px);
   right: 0;
-  margin-top: var(--spacing-2);
   background-color: var(--bg-primary);
-  border-radius: var(--spacing-2);
+  border-radius: 12px;
   box-shadow: var(--shadow-md);
-  padding: var(--spacing-2);
+  padding: 0.75rem;
   z-index: 10;
+  border: 1px solid var(--border-color);
+  min-width: 180px;
 }
 
 .share-option {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-4);
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
   width: 100%;
   border: none;
   background: none;
   color: var(--text-primary);
   cursor: pointer;
-  border-radius: var(--spacing-1);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.share-option:not(:last-child) {
+  margin-bottom: 0.25rem;
+}
+
+.share-option svg {
+  width: 20px;
+  height: 20px;
+}
+
+.share-option.whatsapp {
+  color: #25D366;
+}
+
+.share-option.telegram {
+  color: #0088cc;
 }
 
 .share-option:hover {
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-hover);
+  transform: translateY(-1px);
 }
 
-.share-option:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.share-option:active {
+  transform: translateY(0);
 }
 
 .loading-spinner {
@@ -390,6 +419,7 @@
     padding: 1rem;
     background-color: var(--bg-primary);
     box-shadow: var(--shadow-lg);
+    min-width: auto;
   }
 
   .share-option {
