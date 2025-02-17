@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { HiMenuAlt2 } from "react-icons/hi";
 import { IoNotificationsOutline } from "react-icons/io5";
@@ -7,6 +7,7 @@ import { BsSun, BsMoon } from "react-icons/bs";
 import { useTheme } from "../../context/ThemeContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { useAuth } from '../../context/AuthContext';
+import { useProfile } from '../../context/ProfileContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import "./Header.css";
@@ -18,6 +19,7 @@ const Header = ({ onMenuClick }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, signOut } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -29,6 +31,20 @@ const Header = ({ onMenuClick }) => {
       toast.error('Failed to sign out. Please try again.');
     }
   };
+
+  // Get user display name
+  const userDisplayName = useMemo(() => {
+    if (profile?.full_name) return profile.full_name;
+    if (profile?.firstName) return `${profile.firstName} ${profile.lastName}`.trim();
+    return 'User';
+  }, [profile]);
+
+  // Get avatar URL or fallback
+  const avatarUrl = useMemo(() => {
+    if (profile?.avatar_url) return profile.avatar_url;
+    if (profile?.avatar) return profile.avatar;
+    return null;
+  }, [profile]);
 
   return (
     <header className="dashboard-header">
@@ -116,9 +132,21 @@ const Header = ({ onMenuClick }) => {
             aria-haspopup="true"
           >
             <div className="user-avatar">
-              <RiUserLine size={20} />
+              {avatarUrl ? (
+                <img 
+                  src={avatarUrl} 
+                  alt="Profile" 
+                  className="profile-image"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = ''; // Clear the source on error
+                  }}
+                />
+              ) : (
+                <RiUserLine size={20} />
+              )}
             </div>
-            <span className="user-name">{user?.user_metadata?.full_name || 'User'}</span>
+            <span className="user-name">{userDisplayName}</span>
           </button>
 
           {showUserMenu && (

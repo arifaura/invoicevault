@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
         console.error('Session check error:', error);
       } finally {
         setLoading(false);
-        setIsInitialLoad(false); // Mark initial load as complete
+        setIsInitialLoad(false);
       }
     };
 
@@ -42,25 +42,25 @@ export const AuthProvider = ({ children }) => {
       if (session) {
         setSession(session);
         setUser(session.user);
-      } else {
-        handleSignOut();
       }
     }, 3600000); // Refresh token every hour
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth event:', event);
-      setUser(session?.user ?? null);
-      setSession(session);
-      setLoading(false);
-
-      // Handle different auth events
-      switch (event) {
-        case 'SIGNED_IN':
-          // Only show toast if it's not the initial page load
+      
+      if (session) {
+        setUser(session.user);
+        setSession(session);
+        
+        // Handle successful sign-in
+        if (event === 'SIGNED_IN') {
+          // Dismiss any existing Google sign-in toast
+          toast.dismiss('googleSignIn');
+          
+          // Show success message only if it's not the initial load
           if (!isInitialLoad) {
-            // Check if it's a Google sign-in
-            if (session?.user?.app_metadata?.provider === 'google') {
+            if (session.user?.app_metadata?.provider === 'google') {
               toast.success('Successfully signed in with Google!', {
                 icon: '🔑',
                 duration: 3000
@@ -72,22 +72,30 @@ export const AuthProvider = ({ children }) => {
               });
             }
           }
-          break;
-        case 'SIGNED_OUT':
+
+          // Handle redirect after successful sign-in
+          const redirectUrl = sessionStorage.getItem('redirectUrl');
+          if (redirectUrl && !isInitialLoad) {
+            sessionStorage.removeItem('redirectUrl');
+            window.location.href = redirectUrl;
+          }
+        }
+      } else {
+        setUser(null);
+        setSession(null);
+        
+        if (event === 'SIGNED_OUT') {
           toast.success('Successfully signed out!', {
             icon: '👋',
             duration: 3000
           });
-          break;
-        case 'TOKEN_REFRESHED':
-          console.log('Token refreshed');
-          break;
-        case 'USER_UPDATED':
-          toast.success('Profile updated!');
-          break;
-        default:
-          break;
+          // Clear any stored redirect URLs on sign out
+          sessionStorage.removeItem('redirectUrl');
+        }
       }
+      
+      setLoading(false);
+      setIsInitialLoad(false);
     });
 
     return () => {

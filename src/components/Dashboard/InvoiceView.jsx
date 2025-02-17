@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { FiArrowLeft, FiDownload, FiEdit2, FiShare2 } from "react-icons/fi";
+import { FiArrowLeft, FiDownload, FiEdit2, FiShare2, FiTrash2 } from "react-icons/fi";
 import { FaWhatsapp, FaTelegram } from "react-icons/fa";
 import CreateInvoiceModal from "./CreateInvoiceModal";
 import InvoiceContent from "../Invoice/InvoiceContent";
@@ -8,6 +8,7 @@ import "./InvoiceView.css";
 import { generatePDF } from "../../utils/pdfGenerator";
 import { supabase } from "../../utils/supabaseClient";
 import { toast } from "react-hot-toast";
+import CustomAlert from '../Common/CustomAlert';
 
 const InvoiceView = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const InvoiceView = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const contentRef = useRef(null);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
   useEffect(() => {
     if (id) {

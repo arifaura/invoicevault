@@ -467,6 +467,65 @@
     color: var(--text-secondary);
 }
 
+.warranty-days {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.warranty-days.good {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.warranty-days.warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.warranty-days.critical {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.warranty-days.expired {
+    background-color: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.warranty-days.na {
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+/* Update table column widths */
+.invoice-table th:nth-child(1) { width: 60px; }  /* S.No */
+.invoice-table th:nth-child(2) { width: 200px; } /* Title */
+.invoice-table th:nth-child(3) { width: 150px; } /* Vendor */
+.invoice-table th:nth-child(4) { width: 100px; } /* Amount */
+.invoice-table th:nth-child(5) { width: 120px; } /* Category */
+.invoice-table th:nth-child(6) { width: 120px; } /* Payment Mode */
+.invoice-table th:nth-child(7) { width: 100px; } /* Status */
+.invoice-table th:nth-child(8) { width: 120px; } /* Purchase Date */
+.invoice-table th:nth-child(9) { width: 120px; } /* Warranty Period */
+.invoice-table th:nth-child(10) { width: 100px; } /* Days Left */
+.invoice-table th:nth-child(11) { width: 160px; } /* Actions */
+
+/* Make the table scrollable horizontally */
+.table-wrapper {
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}
+
+.invoice-table {
+    min-width: 1400px; /* Ensure table doesn't get too cramped */
+}
+
 @media (max-width: 768px) {
     .invoices-container {
         padding: 1rem;

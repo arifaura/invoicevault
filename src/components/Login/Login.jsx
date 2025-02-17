@@ -35,7 +35,15 @@ const Login = () => {
         icon: '👋',
         duration: 3000
       });
-      navigate('/dashboard');
+
+      // Get redirect URL if it exists
+      const redirectUrl = sessionStorage.getItem('redirectUrl');
+      if (redirectUrl) {
+        sessionStorage.removeItem('redirectUrl');
+        navigate(redirectUrl);
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error) {
       toast.error(error.message, {
         icon: '❌',

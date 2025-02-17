@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
-import toast from 'react-hot-toast';
 import { supabase } from '../../utils/supabaseClient';
+import { toast } from 'react-hot-toast';
 import './Signup.css';
 import { BsEyeFill, BsEyeSlashFill } from 'react-icons/bs';
 

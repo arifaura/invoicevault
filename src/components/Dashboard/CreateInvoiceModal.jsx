@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiUpload, FiCamera, FiEdit2, FiPlus } from 'react-icons/fi';
+import { FiX, FiUpload, FiCamera } from 'react-icons/fi';
 import './CreateInvoiceModal.css';
 import { supabase } from '../../utils/supabaseClient';
-import { useNotifications } from '../../context/NotificationContext';
-import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-hot-toast';
 
-const CreateInvoiceModal = ({ isOpen, onClose, invoice = null, initialData }) => {
-  const { addNotification } = useNotifications();
+const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,29 +24,27 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null, initialData }) =>
   });
 
   const [files, setFiles] = useState({
-    mainImage: invoice?.mainImage || null
+    mainImage: initialData?.mainImage || null
   });
 
   useEffect(() => {
     if (initialData) {
-      // Set form data from the initialData
       setFormData({
-        title: initialData.formData.title || '',
-        vendor_name: initialData.formData.vendor_name || '',
-        amount: initialData.formData.amount || '',
-        currency: initialData.formData.currency || 'INR',
-        purchase_date: initialData.formData.purchase_date || '',
-        payment_mode: initialData.formData.payment_mode || '',
-        status: initialData.formData.status || '',
-        category: initialData.formData.category || '',
-        warranty_period: initialData.formData.warranty_period || '',
-        notes: initialData.formData.notes || ''
+        title: initialData.title || '',
+        vendor_name: initialData.vendor?.name || '',
+        amount: initialData.amount || '',
+        currency: initialData.currency || 'INR',
+        purchase_date: initialData.purchase_date || '',
+        payment_mode: initialData.payment_mode || '',
+        status: initialData.status || '',
+        category: initialData.category || '',
+        warranty_period: initialData.warranty_period || '',
+        notes: initialData.notes || ''
       });
 
-      // Set image if exists
-      if (initialData.formData.image_url) {
+      if (initialData.image_url) {
         setFiles({
-          mainImage: initialData.formData.image_url
+          mainImage: initialData.image_url
         });
       }
     }
@@ -133,7 +129,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null, initialData }) =>
       let vendorId;
       if (initialData) {
         // Update existing vendor if name changed
-        if (formData.vendor_name !== initialData.formData.vendor_name) {
+        if (formData.vendor_name !== initialData.vendor?.name) {
           const { data: vendor, error: vendorError } = await supabase
             .from('vendors')
             .update({ name: formData.vendor_name })
@@ -178,8 +174,8 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null, initialData }) =>
       };
 
       // Only add image_url if we have one
-      if (imageUrl || (initialData && initialData.formData.image_url)) {
-        invoiceData.image_url = imageUrl || initialData.formData.image_url;
+      if (imageUrl || (initialData && initialData.image_url)) {
+        invoiceData.image_url = imageUrl || initialData.image_url;
       }
 
       if (initialData) {
@@ -210,6 +206,23 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null, initialData }) =>
           duration: 4000,
           icon: '✅'
         });
+
+        // Reset form data after successful creation
+        setFormData({
+          title: '',
+          invoice_number: '',
+          vendor_name: '',
+          amount: '',
+          currency: 'INR',
+          purchase_date: '',
+          payment_mode: '',
+          status: '',
+          category: '',
+          warranty_period: '',
+          notes: '',
+          attachments: []
+        });
+        setFiles({ mainImage: null });
       }
 
       onClose();
@@ -232,7 +245,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null, initialData }) =>
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h2>{invoice ? 'Edit Invoice' : 'Create Invoice'}</h2>
+          <h2>{initialData ? 'Edit Invoice' : 'Create Invoice'}</h2>
           <button className="close-btn" onClick={onClose}>
             <FiX size={24} />
           </button>
@@ -462,7 +475,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, invoice = null, initialData }) =>
               Cancel
             </button>
             <button type="submit" className="submit-button">
-              {invoice ? 'Save Changes' : 'Create Invoice'}
+              {initialData ? 'Save Changes' : 'Create Invoice'}
             </button>
           </div>
         </form>

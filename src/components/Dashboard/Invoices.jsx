@@ -60,13 +60,18 @@ const Invoices = () => {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedInvoices(filteredInvoices.map(invoice => invoice?.id || ''));
+      const validInvoiceIds = filteredInvoices
+        .filter(invoice => invoice?.id)
+        .map(invoice => invoice.id);
+      setSelectedInvoices(validInvoiceIds);
     } else {
       setSelectedInvoices([]);
     }
   };
 
   const handleSelect = (invoiceId) => {
+    if (!invoiceId) return;
+    
     setSelectedInvoices(prev => {
       if (prev.includes(invoiceId)) {
         return prev.filter(id => id !== invoiceId);
@@ -83,28 +88,48 @@ const Invoices = () => {
   };
 
   const handleEditInvoice = (invoice) => {
-    if (!invoice) return;
+    if (!invoice?.id) return;
     setSelectedInvoice(invoice);
     setIsCreateModalOpen(true);
   };
 
   const handleDeleteInvoice = (invoice) => {
-    if (!invoice) return;
+    if (!invoice?.id) {
+      toast.error('Invalid invoice');
+      return;
+    }
     setDeleteAlert({ show: true, invoice });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     const invoice = deleteAlert.invoice;
-    setInvoices(prev => prev.filter(inv => inv.id !== invoice.id));
-    setSelectedInvoices(prev => prev.filter(id => id !== invoice.id));
+    if (!invoice?.id) {
+      toast.error('Invalid invoice');
+      return;
+    }
     
-    addNotification({
-      type: 'success',
-      message: `Invoice ${invoice.invoice_number} deleted successfully`,
-      icon: <FiTrash2 size={16} />
-    });
-    
-    setDeleteAlert({ show: false, invoice: null });
+    try {
+      toast.loading('Deleting invoice...', { id: 'deleteInvoice' });
+      
+      // Delete the invoice
+      const { error } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', invoice.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setInvoices(prev => prev.filter(inv => inv.id !== invoice.id));
+      
+      toast.success('Invoice deleted successfully!', { id: 'deleteInvoice' });
+      
+      // Close the alert
+      setDeleteAlert({ show: false, invoice: null });
+    } catch (error) {
+      console.error('Error deleting invoice:', error);
+      toast.error('Failed to delete invoice: ' + error.message, { id: 'deleteInvoice' });
+    }
   };
 
   const handleBulkDelete = () => {
@@ -236,25 +261,36 @@ const Invoices = () => {
   const calculateWarrantyDaysLeft = (purchaseDate, warrantyPeriod) => {
     if (!warrantyPeriod || warrantyPeriod === 'N/A') return null;
 
+    // Convert warranty period to days
+    let warrantyDays = 0;
+    
+    // Handle combined year and month format
+    const years = warrantyPeriod.match(/(\d+)\s*year/);
+    const months = warrantyPeriod.match(/(\d+)\s*month/);
+    
+    if (years) {
+      warrantyDays += parseInt(years[1]) * 365;
+    }
+    if (months) {
+      warrantyDays += parseInt(months[1]) * 30;
+    }
+    
+    // If no valid period found, return null
+    if (warrantyDays === 0) return null;
+
     const purchaseDateTime = new Date(purchaseDate).getTime();
     const currentTime = new Date().getTime();
+    const daysLeft = Math.ceil((purchaseDateTime + (warrantyDays * 24 * 60 * 60 * 1000) - currentTime) / (1000 * 60 * 60 * 24));
     
-    // Convert warranty period to milliseconds
-    let warrantyDuration;
-    if (warrantyPeriod.includes('year')) {
-      const years = parseInt(warrantyPeriod);
-      warrantyDuration = years * 365 * 24 * 60 * 60 * 1000;
-    } else if (warrantyPeriod.includes('month')) {
-      const months = parseInt(warrantyPeriod);
-      warrantyDuration = months * 30 * 24 * 60 * 60 * 1000;
-    } else {
-      return null;
-    }
-
-    const warrantyEndTime = purchaseDateTime + warrantyDuration;
-    const daysLeft = Math.ceil((warrantyEndTime - currentTime) / (1000 * 60 * 60 * 24));
-
     return daysLeft;
+  };
+
+  const getWarrantyStatusClass = (daysLeft) => {
+    if (daysLeft === null) return 'na';
+    if (daysLeft <= 0) return 'expired';
+    if (daysLeft <= 30) return 'critical';
+    if (daysLeft <= 90) return 'warning';
+    return 'good';
   };
 
   // Warranty expiration check
@@ -508,66 +544,105 @@ const Invoices = () => {
             <table className="invoice-table">
               <thead>
                 <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      onChange={handleSelectAll}
+                      checked={selectedInvoices.length > 0 && selectedInvoices.length === filteredInvoices.length}
+                      className="checkbox"
+                    />
+                  </th>
                   <th>S.No</th>
                   <th>Title</th>
                   <th>Vendor</th>
                   <th>Amount</th>
+                  <th>Category</th>
+                  <th>Payment Mode</th>
                   <th>Status</th>
-                  <th>Date</th>
+                  <th>Purchase Date</th>
+                  <th>Warranty Period</th>
+                  <th>Days Left</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredInvoices.map((invoice, index) => (
-                  <tr key={invoice?.id || index}>
-                    <td className="serial-number">{index + 1}</td>
-                    <td>{invoice?.title || 'N/A'}</td>
-                    <td>{invoice?.vendor?.name || 'N/A'}</td>
-                    <td>₹{invoice?.amount || '0'}</td>
-                    <td>
-                      <span className={`status-badge ${invoice?.status || ''}`}>
-                        {invoice?.status ? invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) : 'N/A'}
-                      </span>
-                    </td>
-                    <td>{invoice?.purchase_date ? new Date(invoice.purchase_date).toLocaleDateString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric'
-                    }) : 'N/A'}</td>
-                    <td>
-                      <div className="table-actions">
-                        <button 
-                          className="action-icon-btn" 
-                          title="View Invoice"
-                          onClick={() => handleViewInvoice(invoice?.id)}
-                        >
-                          <FiEye size={16} />
-                        </button>
-                        <button 
-                          className="action-icon-btn" 
-                          title="Edit Invoice"
-                          onClick={() => handleEditInvoice(invoice)}
-                        >
-                          <FiEdit2 size={16} />
-                        </button>
-                        <button 
-                          className="action-icon-btn" 
-                          title="Download Invoice"
-                          onClick={() => handleDownloadInvoice(invoice)}
-                        >
-                          <FiDownload size={16} />
-                        </button>
-                        <button 
-                          className="action-icon-btn delete" 
-                          title="Delete Invoice"
-                          onClick={() => handleDeleteInvoice(invoice)}
-                        >
-                          <FiTrash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filteredInvoices.map((invoice, index) => {
+                  const daysLeft = calculateWarrantyDaysLeft(invoice?.purchase_date, invoice?.warranty_period);
+                  const warrantyStatusClass = getWarrantyStatusClass(daysLeft);
+                  
+                  return (
+                    <tr key={invoice?.id || index}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedInvoices.includes(invoice?.id)}
+                          onChange={() => handleSelect(invoice?.id)}
+                          className="checkbox"
+                        />
+                      </td>
+                      <td className="serial-number">{index + 1}</td>
+                      <td className="invoice-title">
+                        <div className="text-truncate">{invoice?.title || 'N/A'}</div>
+                      </td>
+                      <td>{invoice?.vendor?.name || 'N/A'}</td>
+                      <td className="amount">₹{invoice?.amount || '0'}</td>
+                      <td>{invoice?.category || 'N/A'}</td>
+                      <td>{invoice?.payment_mode ? invoice.payment_mode.replace(/_/g, ' ').toUpperCase() : 'N/A'}</td>
+                      <td>
+                        <span className={`status-badge ${invoice?.status || ''}`}>
+                          {invoice?.status ? invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) : 'N/A'}
+                        </span>
+                      </td>
+                      <td>{invoice?.purchase_date ? new Date(invoice.purchase_date).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      }) : 'N/A'}</td>
+                      <td>{invoice?.warranty_period || 'N/A'}</td>
+                      <td>
+                        <span className={`warranty-days ${warrantyStatusClass}`}>
+                          {daysLeft !== null 
+                            ? daysLeft <= 0 
+                              ? 'Expired'
+                              : `${daysLeft} days` 
+                            : 'N/A'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="table-actions">
+                          <button 
+                            className="action-icon-btn" 
+                            title="View Invoice"
+                            onClick={() => handleViewInvoice(invoice?.id)}
+                          >
+                            <FiEye size={16} />
+                          </button>
+                          <button 
+                            className="action-icon-btn" 
+                            title="Edit Invoice"
+                            onClick={() => handleEditInvoice(invoice)}
+                          >
+                            <FiEdit2 size={16} />
+                          </button>
+                          <button 
+                            className="action-icon-btn" 
+                            title="Download Invoice"
+                            onClick={() => handleDownloadInvoice(invoice)}
+                          >
+                            <FiDownload size={16} />
+                          </button>
+                          <button 
+                            className="action-icon-btn delete" 
+                            title="Delete Invoice"
+                            onClick={() => handleDeleteInvoice(invoice)}
+                          >
+                            <FiTrash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -595,25 +670,23 @@ const Invoices = () => {
         onClose={() => {
           setIsCreateModalOpen(false);
           setSelectedInvoice(null);
+          // Refresh the invoices list after closing the modal
+          fetchInvoices();
         }}
         mode={selectedInvoice ? 'edit' : 'create'}
         initialData={selectedInvoice}
       />
 
       <CustomAlert
-        show={deleteAlert.show}
+        isOpen={deleteAlert.show}
         title="Delete Invoice"
-        message={`Are you sure you want to delete invoice ${deleteAlert.invoice?.invoice_number}?`}
-        onConfirm={() => {
-          confirmDelete();
-          // Remove the default confirm
-          return false;
-        }}
-        onCancel={() => setDeleteAlert({ show: false, invoice: null })}
+        message={`Are you sure you want to delete invoice "${deleteAlert.invoice?.title}"?`}
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteAlert({ show: false, invoice: null })}
       />
       
       <CustomAlert
-        show={bulkDeleteAlert}
+        isOpen={bulkDeleteAlert}
         title="Delete Multiple Invoices"
         message={`Are you sure you want to delete ${selectedInvoices.length} invoices? This action cannot be undone.`}
         onConfirm={() => {
@@ -621,7 +694,7 @@ const Invoices = () => {
           // Remove the default confirm
           return false;
         }}
-        onCancel={() => setBulkDeleteAlert(false)}
+        onClose={() => setBulkDeleteAlert(false)}
       />
     </div>
   );
