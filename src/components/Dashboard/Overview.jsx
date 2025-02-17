@@ -12,6 +12,7 @@ import InvoiceContent from '../Invoice/InvoiceContent';
 import ReactDOM from 'react-dom/client';
 import { supabase } from '../../utils/supabaseClient';
 import toast from 'react-hot-toast';
+import ImagePreviewModal from '../Common/ImagePreviewModal';
 
 const Overview = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const Overview = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [recentInvoices, setRecentInvoices] = useState([]);
   const [deleteAlert, setDeleteAlert] = useState({ show: false, invoice: null });
+  const [previewImage, setPreviewImage] = useState(null);
 
   // Calculate stats from invoices data
   const stats = useMemo(() => {
@@ -283,12 +285,24 @@ const Overview = () => {
                     </td>
                     <td className="invoice-image">
                       {invoice?.image_url ? (
-                        <img 
-                          src={invoice.image_url} 
-                          alt={invoice.title} 
-                          className="invoice-thumbnail"
-                          loading="lazy"
-                        />
+                        <div 
+                          className="image-wrapper"
+                          onClick={() => setPreviewImage(invoice.image_url)}
+                          role="button"
+                          tabIndex={0}
+                          title="Click to view full size"
+                        >
+                          <img 
+                            src={invoice.image_url} 
+                            alt={invoice.title} 
+                            className="invoice-thumbnail"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = ''; // Clear the source on error
+                            }}
+                          />
+                        </div>
                       ) : (
                         <div className="no-image">
                           <RiFileListLine size={20} />
@@ -367,6 +381,13 @@ const Overview = () => {
         onConfirm={confirmDelete}
         onClose={() => setDeleteAlert({ show: false, invoice: null })}
       />
+
+      {previewImage && (
+        <ImagePreviewModal
+          imageUrl={previewImage}
+          onClose={() => setPreviewImage(null)}
+        />
+      )}
     </div>
   );
 };

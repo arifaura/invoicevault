@@ -18,12 +18,15 @@ export const AuthProvider = ({ children }) => {
         if (session) {
           setSession(session);
           setUser(session.user);
-          // Don't show welcome back toast on initial page load
-          if (!isInitialLoad) {
+          
+          // Check if welcome message has been shown in this session
+          const hasShownWelcome = localStorage.getItem('hasShownWelcome');
+          if (!hasShownWelcome && !isInitialLoad) {
             toast.success('Welcome back!', {
               icon: '👋',
               duration: 3000
             });
+            localStorage.setItem('hasShownWelcome', 'true');
           }
         }
       } catch (error) {
@@ -58,8 +61,9 @@ export const AuthProvider = ({ children }) => {
           // Dismiss any existing Google sign-in toast
           toast.dismiss('googleSignIn');
           
-          // Show success message only if it's not the initial load
-          if (!isInitialLoad) {
+          const hasShownSignIn = localStorage.getItem('hasShownSignIn');
+          // Show success message only for new sign-ins and if not shown already
+          if (!isInitialLoad && !hasShownSignIn) {
             if (session.user?.app_metadata?.provider === 'google') {
               toast.success('Successfully signed in with Google!', {
                 icon: '🔑',
@@ -71,6 +75,8 @@ export const AuthProvider = ({ children }) => {
                 duration: 3000
               });
             }
+            localStorage.setItem('hasShownWelcome', 'true');
+            localStorage.setItem('hasShownSignIn', 'true');
           }
 
           // Handle redirect after successful sign-in
@@ -83,6 +89,9 @@ export const AuthProvider = ({ children }) => {
       } else {
         setUser(null);
         setSession(null);
+        // Reset all message flags on sign out
+        localStorage.removeItem('hasShownWelcome');
+        localStorage.removeItem('hasShownSignIn');
         
         if (event === 'SIGNED_OUT') {
           toast.success('Successfully signed out!', {
@@ -109,6 +118,9 @@ export const AuthProvider = ({ children }) => {
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
+      // Reset all message flags
+      localStorage.removeItem('hasShownWelcome');
+      localStorage.removeItem('hasShownSignIn');
       sessionStorage.clear();
     } catch (error) {
       console.error('Error signing out:', error);
