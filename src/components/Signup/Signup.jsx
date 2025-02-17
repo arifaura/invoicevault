@@ -115,7 +115,7 @@ const Signup = () => {
           <div className="card shadow-sm border-0 px-3 px-sm-4 py-3">
             <div className="text-center mb-3">
               <div className="d-flex justify-content-center mb-3">
-                <Logo size="large" />
+                <Logo size="xlarge" />
               </div>
               <h1 className="h4 fw-normal mb-1">Create your account</h1>
             </div>

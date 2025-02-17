@@ -5,13 +5,17 @@ const Logo = ({ size = 'medium' }) => {
   const sizeClass = {
     small: 'logo-small',
     medium: 'logo-medium',
-    large: 'logo-large'
+    large: 'logo-large',
+    xlarge: 'logo-xlarge'
   }[size];
 
   return (
     <div className={`logo-container ${sizeClass}`}>
-      <div className="logo-icon">IV</div>
-      <h1 className="logo-text">InvoiceVault</h1>
+      <img 
+        src="/logo.jpg" 
+        alt="InvoiceVault Logo" 
+        className="logo-image"
+      />
     </div>
   );
 };

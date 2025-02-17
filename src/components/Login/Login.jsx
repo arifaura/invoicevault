@@ -121,7 +121,7 @@ const Login = () => {
 
               <div className="text-center mb-4">
                 <div className="d-flex justify-content-center mb-3">
-                  <Logo size="large" />
+                  <Logo size="xlarge" />
                 </div>
                 <h1 className="h4 fw-normal mb-1">Reset your password</h1>
                 {!resetSent && (
@@ -178,7 +178,7 @@ const Login = () => {
           <div className="card shadow-sm border-0 px-3 px-sm-4 py-3">
             <div className="text-center mb-3">
               <div className="d-flex justify-content-center mb-3">
-                <Logo size="large" />
+                <Logo size="xlarge" />
               </div>
               <h1 className="h4 fw-normal mb-1">Welcome back</h1>
               <p className="text-muted small mb-3">Sign in to manage your invoices</p>
