@@ -759,4 +759,67 @@
     /* Amount column */
     font-weight: 500;
     font-family: monospace;
+}
+
+.skeleton-wrapper {
+    padding: 1rem;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.skeleton-wrapper .invoice-item-content {
+    flex: 1;
+}
+
+.skeleton-wrapper .invoice-main-info {
+    margin-bottom: 0.5rem;
+}
+
+.skeleton-wrapper .invoice-details {
+    display: flex;
+    gap: 1rem;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+/* Skeleton Loading Styles */
+.skeleton-row td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+}
+
+.skeleton-row .table-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.status-skeleton {
+    border-radius: 16px !important;
+}
+
+.skeleton-row td .skeleton {
+    border-radius: 4px;
+}
+
+/* Ensure skeleton rows maintain consistent height */
+.skeleton-row {
+    height: 72px;
+}
+
+/* Add hover effect to skeleton rows for consistency */
+.skeleton-row:hover td {
+    background: var(--bg-hover);
+}
+
+/* Disable checkbox during loading */
+.checkbox:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 } 

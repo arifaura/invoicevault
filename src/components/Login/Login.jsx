@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../utils/supabaseClient';
 import './Login.css';
 import { BsEyeFill, BsEyeSlashFill } from 'react-icons/bs';
+import Logo from '../Common/Logo';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -119,7 +120,9 @@ const Login = () => {
               </button>
 
               <div className="text-center mb-4">
-                <h2 className="logo-text mb-2">LOGO</h2>
+                <div className="d-flex justify-content-center mb-3">
+                  <Logo size="large" />
+                </div>
                 <h1 className="h4 fw-normal mb-1">Reset your password</h1>
                 {!resetSent && (
                   <p className="text-muted small">
@@ -174,7 +177,9 @@ const Login = () => {
         <div className="col-12 col-md-10 col-lg-7 px-0 px-sm-2">
           <div className="card shadow-sm border-0 px-3 px-sm-4 py-3">
             <div className="text-center mb-3">
-              <h2 className="logo-text mb-2">LOGO</h2>
+              <div className="d-flex justify-content-center mb-3">
+                <Logo size="large" />
+              </div>
               <h1 className="h4 fw-normal mb-1">Welcome back</h1>
               <p className="text-muted small mb-3">Sign in to manage your invoices</p>
             </div>

@@ -809,4 +809,100 @@ body::-webkit-scrollbar-thumb:hover {
     max-height: 90vh;
     object-fit: contain;
     border-radius: 4px;
+}
+
+/* Skeleton Styles */
+.skeleton-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card.skeleton-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.invoice-card.skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.invoice-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.invoice-card-content {
+  flex: 1;
+}
+
+.invoice-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.recent-invoices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Skeleton Loading Styles */
+.skeleton-row td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+}
+
+.skeleton-row .table-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.status-skeleton {
+    border-radius: 16px !important;
+}
+
+.skeleton-row td .skeleton {
+    border-radius: 4px;
+}
+
+/* Ensure skeleton rows maintain consistent height */
+.skeleton-row {
+    height: 72px;
+}
+
+/* Add hover effect to skeleton rows for consistency */
+.skeleton-row:hover td {
+    background: var(--bg-hover);
+}
+
+/* Disable buttons during loading */
+.view-all-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Image skeleton styles */
+.skeleton-row .image-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.skeleton-row .image-wrapper .skeleton {
+    border-radius: 6px;
 } 

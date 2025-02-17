@@ -450,4 +450,40 @@
 .placeholder-image span {
   font-size: 0.875rem;
   font-weight: 500;
+}
+
+.skeleton-content {
+  padding: 2rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-header-skeleton {
+  margin-bottom: 2rem;
+}
+
+.invoice-details-skeleton {
+  margin-bottom: 2rem;
+}
+
+.details-row {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.invoice-items-skeleton {
+  margin-bottom: 2rem;
+}
+
+.invoice-summary-skeleton {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
 } 

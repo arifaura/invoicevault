@@ -9,6 +9,50 @@ import { generatePDF } from "../../utils/pdfGenerator";
 import { supabase } from "../../utils/supabaseClient";
 import { toast } from "react-hot-toast";
 import CustomAlert from '../Common/CustomAlert';
+import Skeleton from '../Common/Skeleton';
+
+const InvoiceViewSkeleton = () => (
+  <div className="invoice-view-container">
+    <div className="invoice-view-header">
+      <div className="header-left">
+        <Skeleton width="100px" height="36px" />
+      </div>
+      <div className="header-actions">
+        <Skeleton width="160px" height="36px" />
+      </div>
+    </div>
+
+    <div className="invoice-view-content skeleton-content">
+      <div className="invoice-header-skeleton">
+        <Skeleton width="200px" height="32px" className="mb-2" />
+        <Skeleton width="300px" height="24px" />
+      </div>
+      
+      <div className="invoice-details-skeleton">
+        <div className="details-row">
+          <Skeleton width="150px" height="24px" />
+          <Skeleton width="150px" height="24px" />
+        </div>
+        <div className="details-row">
+          <Skeleton width="180px" height="24px" />
+          <Skeleton width="120px" height="24px" />
+        </div>
+      </div>
+
+      <div className="invoice-items-skeleton">
+        <Skeleton width="100%" height="40px" className="mb-2" />
+        <Skeleton width="100%" height="60px" />
+        <Skeleton width="100%" height="60px" />
+        <Skeleton width="100%" height="60px" />
+      </div>
+
+      <div className="invoice-summary-skeleton">
+        <Skeleton width="200px" height="32px" className="mb-2" />
+        <Skeleton width="150px" height="24px" />
+      </div>
+    </div>
+  </div>
+);
 
 const InvoiceView = () => {
   const navigate = useNavigate();
@@ -105,11 +149,7 @@ const InvoiceView = () => {
   };
 
   if (loading) {
-    return (
-      <div className="invoice-view-container loading">
-        <div className="loading-spinner">Loading...</div>
-      </div>
-    );
+    return <InvoiceViewSkeleton />;
   }
 
   if (!invoice) {

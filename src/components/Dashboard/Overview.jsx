@@ -13,6 +13,71 @@ import ReactDOM from 'react-dom/client';
 import { supabase } from '../../utils/supabaseClient';
 import toast from 'react-hot-toast';
 import ImagePreviewModal from '../Common/ImagePreviewModal';
+import Skeleton from '../Common/Skeleton';
+
+const StatCardSkeleton = () => (
+  <div className="stat-card skeleton-card">
+    <div className="stat-icon">
+      <Skeleton width="24px" height="24px" />
+    </div>
+    <div className="stat-info">
+      <Skeleton width="60px" height="24px" className="mb-2" />
+      <Skeleton width="100px" height="16px" />
+    </div>
+  </div>
+);
+
+const InvoiceCardSkeleton = () => (
+  <div className="invoice-card skeleton-card">
+    <div className="invoice-card-header">
+      <Skeleton width="150px" height="24px" />
+      <Skeleton width="100px" height="24px" />
+    </div>
+    <div className="invoice-card-content">
+      <Skeleton width="200px" height="20px" className="mb-2" />
+      <Skeleton width="150px" height="16px" />
+    </div>
+    <div className="invoice-card-footer">
+      <Skeleton width="120px" height="32px" />
+    </div>
+  </div>
+);
+
+const TableRowSkeleton = () => (
+  <tr className="skeleton-row">
+    <td>
+      <Skeleton width="40px" height="24px" />
+    </td>
+    <td>
+      <Skeleton width="200px" height="24px" />
+    </td>
+    <td>
+      <Skeleton width="150px" height="24px" />
+    </td>
+    <td>
+      <div className="image-wrapper">
+        <Skeleton width="48px" height="48px" />
+      </div>
+    </td>
+    <td>
+      <Skeleton width="100px" height="24px" />
+    </td>
+    <td>
+      <Skeleton width="120px" height="32px" className="status-skeleton" />
+    </td>
+    <td>
+      <Skeleton width="120px" height="24px" />
+    </td>
+    <td>
+      <div className="table-actions">
+        <Skeleton width="32px" height="32px" />
+        <Skeleton width="32px" height="32px" />
+        <Skeleton width="32px" height="32px" />
+        <Skeleton width="32px" height="32px" />
+      </div>
+    </td>
+  </tr>
+);
 
 const Overview = () => {
   const navigate = useNavigate();
@@ -23,6 +88,7 @@ const Overview = () => {
   const [recentInvoices, setRecentInvoices] = useState([]);
   const [deleteAlert, setDeleteAlert] = useState({ show: false, invoice: null });
   const [previewImage, setPreviewImage] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Calculate stats from invoices data
   const stats = useMemo(() => {
@@ -77,6 +143,7 @@ const Overview = () => {
   }, []);
 
   const fetchInvoices = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('invoices')
@@ -91,6 +158,8 @@ const Overview = () => {
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast.error('Failed to load invoices');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -197,15 +266,24 @@ const Overview = () => {
 
       {/* Stats Grid */}
       <div className="stats-grid mb-6">
-        {stats.map((stat, index) => (
-          <div key={index} className={`stat-card ${stat.color}`}>
-            <div className="stat-icon">{stat.icon}</div>
-            <div className="stat-info">
-              <h3 className="stat-value">{stat.value}</h3>
-              <p className="stat-title">{stat.title}</p>
+        {loading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          stats.map((stat, index) => (
+            <div key={index} className={`stat-card ${stat.color}`}>
+              <div className="stat-icon">{stat.icon}</div>
+              <div className="stat-info">
+                <h3 className="stat-value">{stat.value}</h3>
+                <p className="stat-title">{stat.title}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* No Invoices Message */}
@@ -248,7 +326,54 @@ const Overview = () => {
       </div>
 
       {/* Recent Invoices Section */}
-      {recentInvoices.length > 0 && (
+      {loading ? (
+        <div className="recent-invoices-section">
+          <div className="section-header">
+            <h2>Recent Invoices</h2>
+            <button className="view-all-btn" disabled>
+              View All
+            </button>
+          </div>
+          <div className="table-container">
+            <table className="recent-invoices-table">
+              <thead>
+                <tr>
+                  <th>S.NO</th>
+                  <th>TITLE</th>
+                  <th>VENDOR</th>
+                  <th>IMAGE</th>
+                  <th>AMOUNT</th>
+                  <th>WARRANTY</th>
+                  <th>DATE</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <TableRowSkeleton />
+                <TableRowSkeleton />
+                <TableRowSkeleton />
+                <TableRowSkeleton />
+                <TableRowSkeleton />
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : recentInvoices.length === 0 ? (
+        <div className="no-invoices-container">
+          <div className="empty-state">
+            <RiFileListLine size={64} className="empty-icon" />
+            <h3>No Invoices Yet</h3>
+            <p>Start by creating your first invoice to track your expenses.</p>
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="btn-primary"
+            >
+              <FiPlus size={16} className="mr-2" />
+              Create Your First Invoice
+            </button>
+          </div>
+        </div>
+      ) : (
         <div className="recent-invoices-section">
           <div className="section-header">
             <h2>Recent Invoices</h2>

@@ -9,6 +9,75 @@ import { generatePDF } from '../../utils/pdfGenerator';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../utils/supabaseClient';
 import { RiFileListLine } from 'react-icons/ri';
+import Skeleton from '../Common/Skeleton';
+
+const InvoiceSkeleton = () => (
+  <div className="invoice-item skeleton-wrapper">
+    <div className="invoice-item-checkbox">
+      <Skeleton width="20px" height="20px" />
+    </div>
+    <div className="invoice-item-content">
+      <div className="invoice-main-info">
+        <Skeleton width="150px" height="24px" className="mb-2" />
+        <Skeleton width="200px" height="20px" />
+      </div>
+      <div className="invoice-details">
+        <Skeleton width="100px" height="20px" />
+        <Skeleton width="120px" height="20px" />
+        <Skeleton width="80px" height="20px" />
+      </div>
+    </div>
+    <div className="invoice-actions">
+      <Skeleton width="120px" height="32px" />
+    </div>
+  </div>
+);
+
+const TableRowSkeleton = () => (
+  <tr className="skeleton-row">
+    <td>
+      <Skeleton width="20px" height="20px" />
+    </td>
+    <td>
+      <Skeleton width="40px" height="24px" />
+    </td>
+    <td>
+      <Skeleton width="200px" height="24px" />
+    </td>
+    <td>
+      <Skeleton width="150px" height="24px" />
+    </td>
+    <td>
+      <Skeleton width="100px" height="24px" />
+    </td>
+    <td>
+      <Skeleton width="120px" height="24px" />
+    </td>
+    <td>
+      <Skeleton width="120px" height="24px" />
+    </td>
+    <td>
+      <Skeleton width="100px" height="32px" className="status-skeleton" />
+    </td>
+    <td>
+      <Skeleton width="120px" height="24px" />
+    </td>
+    <td>
+      <Skeleton width="120px" height="24px" />
+    </td>
+    <td>
+      <Skeleton width="80px" height="24px" />
+    </td>
+    <td>
+      <div className="table-actions">
+        <Skeleton width="32px" height="32px" />
+        <Skeleton width="32px" height="32px" />
+        <Skeleton width="32px" height="32px" />
+        <Skeleton width="32px" height="32px" />
+      </div>
+    </td>
+  </tr>
+);
 
 const Invoices = () => {
   const navigate = useNavigate();
@@ -30,12 +99,14 @@ const Invoices = () => {
   const [deleteAlert, setDeleteAlert] = useState({ show: false, invoice: null });
   const [bulkDeleteAlert, setBulkDeleteAlert] = useState(false);
   const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchInvoices();
   }, []);
 
   const fetchInvoices = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('invoices')
@@ -50,6 +121,8 @@ const Invoices = () => {
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast.error('Failed to load invoices');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -519,7 +592,7 @@ const Invoices = () => {
       </div>
 
       {/* No Invoices Message */}
-      {invoices.length === 0 ? (
+      {invoices.length === 0 && !loading ? (
         <div className="no-invoices-container">
           <div className="empty-state">
             <RiFileListLine size={64} className="empty-icon" />
@@ -550,6 +623,7 @@ const Invoices = () => {
                       onChange={handleSelectAll}
                       checked={selectedInvoices.length > 0 && selectedInvoices.length === filteredInvoices.length}
                       className="checkbox"
+                      disabled={loading}
                     />
                   </th>
                   <th>S.No</th>
@@ -566,83 +640,95 @@ const Invoices = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredInvoices.map((invoice, index) => {
-                  const daysLeft = calculateWarrantyDaysLeft(invoice?.purchase_date, invoice?.warranty_period);
-                  const warrantyStatusClass = getWarrantyStatusClass(daysLeft);
-                  
-                  return (
-                    <tr key={invoice?.id || index}>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={selectedInvoices.includes(invoice?.id)}
-                          onChange={() => handleSelect(invoice?.id)}
-                          className="checkbox"
-                        />
-                      </td>
-                      <td className="serial-number">{index + 1}</td>
-                      <td className="invoice-title">
-                        <div className="text-truncate">{invoice?.title || 'N/A'}</div>
-                      </td>
-                      <td>{invoice?.vendor?.name || 'N/A'}</td>
-                      <td className="amount">₹{invoice?.amount || '0'}</td>
-                      <td>{invoice?.category || 'N/A'}</td>
-                      <td>{invoice?.payment_mode ? invoice.payment_mode.replace(/_/g, ' ').toUpperCase() : 'N/A'}</td>
-                      <td>
-                        <span className={`status-badge ${invoice?.status || ''}`}>
-                          {invoice?.status ? invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) : 'N/A'}
-                        </span>
-                      </td>
-                      <td>{invoice?.purchase_date ? new Date(invoice.purchase_date).toLocaleDateString('en-IN', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                      }) : 'N/A'}</td>
-                      <td>{invoice?.warranty_period || 'N/A'}</td>
-                      <td>
-                        <span className={`warranty-days ${warrantyStatusClass}`}>
-                          {daysLeft !== null 
-                            ? daysLeft <= 0 
-                              ? 'Expired'
-                              : `${daysLeft} days` 
-                            : 'N/A'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="table-actions">
-                          <button 
-                            className="action-icon-btn" 
-                            title="View Invoice"
-                            onClick={() => handleViewInvoice(invoice?.id)}
-                          >
-                            <FiEye size={16} />
-                          </button>
-                          <button 
-                            className="action-icon-btn" 
-                            title="Edit Invoice"
-                            onClick={() => handleEditInvoice(invoice)}
-                          >
-                            <FiEdit2 size={16} />
-                          </button>
-                          <button 
-                            className="action-icon-btn" 
-                            title="Download Invoice"
-                            onClick={() => handleDownloadInvoice(invoice)}
-                          >
-                            <FiDownload size={16} />
-                          </button>
-                          <button 
-                            className="action-icon-btn delete" 
-                            title="Delete Invoice"
-                            onClick={() => handleDeleteInvoice(invoice)}
-                          >
-                            <FiTrash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {loading ? (
+                  // Show multiple skeleton rows while loading
+                  <>
+                    <TableRowSkeleton />
+                    <TableRowSkeleton />
+                    <TableRowSkeleton />
+                    <TableRowSkeleton />
+                    <TableRowSkeleton />
+                    <TableRowSkeleton />
+                  </>
+                ) : (
+                  filteredInvoices.map((invoice, index) => {
+                    const daysLeft = calculateWarrantyDaysLeft(invoice?.purchase_date, invoice?.warranty_period);
+                    const warrantyStatusClass = getWarrantyStatusClass(daysLeft);
+                    
+                    return (
+                      <tr key={invoice?.id || index}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedInvoices.includes(invoice?.id)}
+                            onChange={() => handleSelect(invoice?.id)}
+                            className="checkbox"
+                          />
+                        </td>
+                        <td className="serial-number">{index + 1}</td>
+                        <td className="invoice-title">
+                          <div className="text-truncate">{invoice?.title || 'N/A'}</div>
+                        </td>
+                        <td>{invoice?.vendor?.name || 'N/A'}</td>
+                        <td className="amount">₹{invoice?.amount || '0'}</td>
+                        <td>{invoice?.category || 'N/A'}</td>
+                        <td>{invoice?.payment_mode ? invoice.payment_mode.replace(/_/g, ' ').toUpperCase() : 'N/A'}</td>
+                        <td>
+                          <span className={`status-badge ${invoice?.status || ''}`}>
+                            {invoice?.status ? invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) : 'N/A'}
+                          </span>
+                        </td>
+                        <td>{invoice?.purchase_date ? new Date(invoice.purchase_date).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        }) : 'N/A'}</td>
+                        <td>{invoice?.warranty_period || 'N/A'}</td>
+                        <td>
+                          <span className={`warranty-days ${warrantyStatusClass}`}>
+                            {daysLeft !== null 
+                              ? daysLeft <= 0 
+                                ? 'Expired'
+                                : `${daysLeft} days` 
+                              : 'N/A'}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="table-actions">
+                            <button 
+                              className="action-icon-btn" 
+                              title="View Invoice"
+                              onClick={() => handleViewInvoice(invoice?.id)}
+                            >
+                              <FiEye size={16} />
+                            </button>
+                            <button 
+                              className="action-icon-btn" 
+                              title="Edit Invoice"
+                              onClick={() => handleEditInvoice(invoice)}
+                            >
+                              <FiEdit2 size={16} />
+                            </button>
+                            <button 
+                              className="action-icon-btn" 
+                              title="Download Invoice"
+                              onClick={() => handleDownloadInvoice(invoice)}
+                            >
+                              <FiDownload size={16} />
+                            </button>
+                            <button 
+                              className="action-icon-btn delete" 
+                              title="Delete Invoice"
+                              onClick={() => handleDeleteInvoice(invoice)}
+                            >
+                              <FiTrash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

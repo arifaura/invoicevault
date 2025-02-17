@@ -5,6 +5,7 @@ import { supabase } from '../../utils/supabaseClient';
 import { toast } from 'react-hot-toast';
 import './Signup.css';
 import { BsEyeFill, BsEyeSlashFill } from 'react-icons/bs';
+import Logo from '../Common/Logo';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -113,7 +114,9 @@ const Signup = () => {
         <div className="col-12 col-md-10 col-lg-7 px-0 px-sm-2">
           <div className="card shadow-sm border-0 px-3 px-sm-4 py-3">
             <div className="text-center mb-3">
-              <h2 className="logo-text mb-2">LOGO</h2>
+              <div className="d-flex justify-content-center mb-3">
+                <Logo size="large" />
+              </div>
               <h1 className="h4 fw-normal mb-1">Create your account</h1>
             </div>
             
