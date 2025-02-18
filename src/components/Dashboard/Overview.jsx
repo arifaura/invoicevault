@@ -92,10 +92,33 @@ const Overview = () => {
 
   // Calculate stats from invoices data
   const stats = useMemo(() => {
+    console.log('Calculating stats from invoices:', recentInvoices);
     const totalInvoices = recentInvoices.length;
-    const pendingInvoices = recentInvoices.filter(invoice => invoice.status === 'pending').length;
-    const paidInvoices = recentInvoices.filter(invoice => invoice.status === 'paid').length;
-    const emiInvoices = recentInvoices.filter(invoice => invoice.status === 'emi').length;
+    
+    // Helper function to normalize status
+    const normalizeStatus = (status) => {
+      if (!status) return 'paid'; // Default to paid if no status
+      return status.toLowerCase().trim();
+    };
+
+    const pendingInvoices = recentInvoices.filter(invoice => 
+      normalizeStatus(invoice.status) === 'pending'
+    ).length;
+
+    const paidInvoices = recentInvoices.filter(invoice => 
+      normalizeStatus(invoice.status) === 'paid'
+    ).length;
+
+    const emiInvoices = recentInvoices.filter(invoice => 
+      normalizeStatus(invoice.status) === 'emi'
+    ).length;
+
+    console.log('Status counts:', {
+      total: totalInvoices,
+      pending: pendingInvoices,
+      paid: paidInvoices,
+      emi: emiInvoices
+    });
 
     return [
       {
