@@ -118,6 +118,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
     e.preventDefault();
     try {
       setLoading(true);
+      console.log('Form submission - Status value:', formData.status);
 
       // Upload image first if exists
       let imageUrl = null;
@@ -130,6 +131,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
       if (initialData) {
         // Update existing vendor if name changed
         if (formData.vendor_name !== initialData.vendor?.name) {
+          console.log('Updating vendor...');
           const { data: vendor, error: vendorError } = await supabase
             .from('vendors')
             .update({ name: formData.vendor_name })
@@ -144,6 +146,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
         }
       } else {
         // Create new vendor
+        console.log('Creating new vendor...');
         const { data: vendor, error: vendorError } = await supabase
           .from('vendors')
           .insert([{
@@ -173,13 +176,11 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
         updated_at: new Date().toISOString()
       };
 
-      // Only add image_url if we have one
-      if (imageUrl || (initialData && initialData.image_url)) {
-        invoiceData.image_url = imageUrl || initialData.image_url;
-      }
+      console.log('Saving invoice with data:', invoiceData);
 
       if (initialData) {
         // Update existing invoice
+        console.log('Updating existing invoice...');
         const { error } = await supabase
           .from('invoices')
           .update(invoiceData)
@@ -259,10 +260,21 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
               <div className="main-upload-area">
                 {files.mainImage ? (
                   <div className="preview-image">
-                    <img 
-                      src={files.mainImage instanceof File ? URL.createObjectURL(files.mainImage) : files.mainImage} 
-                      alt="Preview" 
-                    />
+                    {files.mainImage instanceof File && files.mainImage.type === 'application/pdf' ? (
+                      <div className="pdf-preview">
+                        <embed 
+                          src={URL.createObjectURL(files.mainImage)} 
+                          type="application/pdf"
+                          width="100%"
+                          height="300px"
+                        />
+                      </div>
+                    ) : (
+                      <img 
+                        src={files.mainImage instanceof File ? URL.createObjectURL(files.mainImage) : files.mainImage} 
+                        alt="Preview" 
+                      />
+                    )}
                     <button 
                       type="button" 
                       onClick={() => setFiles(prev => ({ ...prev, mainImage: null }))}
@@ -275,7 +287,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
                   <div className="upload-placeholder">
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/*,.pdf,application/pdf"
                       onChange={handleFileUpload}
                       id="mainImage"
                       className="file-input"

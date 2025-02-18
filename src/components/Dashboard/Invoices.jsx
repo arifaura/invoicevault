@@ -108,6 +108,7 @@ const Invoices = () => {
   const fetchInvoices = async () => {
     setLoading(true);
     try {
+      console.log('Fetching invoices...');
       const { data, error } = await supabase
         .from('invoices')
         .select(`
@@ -116,7 +117,27 @@ const Invoices = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase query error:', error);
+        throw error;
+      }
+
+      console.log('Raw database response:', data);
+      
+      if (Array.isArray(data)) {
+        console.log('Number of invoices:', data.length);
+        data.forEach(invoice => {
+          console.log('Invoice details:', {
+            id: invoice.id,
+            title: invoice.title,
+            status: invoice.status,
+            vendor: invoice.vendor
+          });
+        });
+      } else {
+        console.log('Data is not an array:', typeof data);
+      }
+
       setInvoices(data);
     } catch (error) {
       console.error('Error fetching invoices:', error);
@@ -674,8 +695,8 @@ const Invoices = () => {
                         <td>{invoice?.category || 'N/A'}</td>
                         <td>{invoice?.payment_mode ? invoice.payment_mode.replace(/_/g, ' ').toUpperCase() : 'N/A'}</td>
                         <td>
-                          <span className={`status-badge ${invoice?.status || ''}`}>
-                            {invoice?.status ? invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) : 'N/A'}
+                          <span className={`status-badge ${invoice?.status || 'paid'}`}>
+                            {invoice?.status ? invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) : 'Paid'}
                           </span>
                         </td>
                         <td>{invoice?.purchase_date ? new Date(invoice.purchase_date).toLocaleDateString('en-IN', {
