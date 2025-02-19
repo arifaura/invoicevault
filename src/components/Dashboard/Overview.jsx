@@ -443,13 +443,13 @@ const Overview = () => {
                           <img 
                             src={supabase.storage
                               .from('invoice-images')
-                              .getPublicUrl(invoice.image_url.split('invoice-images/')[1])?.data?.publicUrl || invoice.image_url}
+                              .getPublicUrl(invoice.image_url)?.data?.publicUrl}
                             alt={invoice.title} 
                             className="invoice-thumbnail"
                             loading="lazy"
                             onError={(e) => {
                               e.target.onerror = null;
-                              e.target.src = ''; 
+                              e.target.src = '/logo.jpg'; 
                               console.error('Image load error for:', invoice.image_url);
                             }}
                           />
