@@ -1,18 +1,14 @@
 .logo-container {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 0.5rem;
+  padding: 0;
 }
 
 .logo-image {
-  object-fit: cover;
-  border-radius: 12px;
+  height: 65px;
   width: auto;
-  max-width: 100%;
-  object-position: center;
-  display: block;
+  object-fit: contain;
+  border-radius: 8px;
 }
 
 .logo-icon {
@@ -48,8 +44,7 @@
 }
 
 .logo-small .logo-image {
-  height: 60px;
-  width: auto;
+  height: 50px;
 }
 
 .logo-medium .logo-icon {
@@ -63,8 +58,7 @@
 }
 
 .logo-medium .logo-image {
-  height: 80px;
-  width: auto;
+  height: 65px;
 }
 
 .logo-large .logo-icon {
@@ -78,8 +72,7 @@
 }
 
 .logo-large .logo-image {
-  height: 120px;
-  width: auto;
+  height: 80px;
 }
 
 .logo-xlarge .logo-icon {
@@ -93,6 +86,5 @@
 }
 
 .logo-xlarge .logo-image {
-  height: 160px;
-  width: auto;
-} 
+  height: 100px;
+}
