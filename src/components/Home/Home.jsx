@@ -5,6 +5,12 @@ import Logo from '../Common/Logo';
 import './Home.css';
 
 const Home = () => {
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -25,10 +31,15 @@ const Home = () => {
   return (
     <div className="home-container">
       <nav className="home-nav">
-        <Logo size="medium" />
-        <div className="nav-links">
-          <Link to="/login" className="nav-link">Login</Link>
-          <Link to="/signup" className="nav-link signup-btn">Sign Up Free</Link>
+        <div className="nav-container">
+          <Logo size="medium" />
+          <button className="mobile-menu-btn" onClick={toggleMenu}>
+            <i className="bi bi-list"></i>
+          </button>
+          <div className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
+            <Link to="/login" className="nav-link">Login</Link>
+            <Link to="/signup" className="nav-link signup-btn">Sign Up Free</Link>
+          </div>
         </div>
       </nav>
 
