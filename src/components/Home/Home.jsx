@@ -1,6 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import Logo from '../Common/Logo';
 import './Home.css';
 
 const Home = () => {
@@ -24,7 +25,7 @@ const Home = () => {
   return (
     <div className="home-container">
       <nav className="home-nav">
-        <div className="logo">InvoiceVault</div>
+        <Logo size="medium" />
         <div className="nav-links">
           <Link to="/login" className="nav-link">Login</Link>
           <Link to="/signup" className="nav-link signup-btn">Sign Up Free</Link>
@@ -38,10 +39,19 @@ const Home = () => {
           <Link to="/signup" className="cta-button">Get Started</Link>
         </div>
         <div className="hero-image hidden">
-          <div className="floating-invoice">
-            <div className="invoice-header"></div>
-            <div className="invoice-line"></div>
-            <div className="invoice-line"></div>
+          <div className="hero-images">
+            <div className="hero-image-item">
+              <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&q=80" alt="Business Analytics" />
+            </div>
+            <div className="hero-image-item">
+              <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500&q=80" alt="Financial Planning" />
+            </div>
+            <div className="hero-image-item">
+              <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=500&q=80" alt="Invoice Management" />
+            </div>
+            <div className="hero-image-item">
+              <img src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=500&q=80" alt="Business Growth" />
+            </div>
           </div>
         </div>
       </section>
