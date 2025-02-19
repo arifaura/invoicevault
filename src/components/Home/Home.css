@@ -18,22 +18,34 @@
 
 .nav-container {
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: relative;
+  padding: 0.5rem 2rem;
 }
 
 .mobile-menu-btn {
-  display: block;
+  display: none;
   background: none;
   border: none;
   color: var(--text-primary);
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0.5rem;
-  margin-left: auto;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: block;
+    margin-left: auto;
+  }
+  
+  .nav-container {
+    padding: 0.5rem 1rem;
+  }
 }
 
 .nav-links {
@@ -83,12 +95,18 @@
   display: flex;
   gap: 2rem;
   align-items: center;
+  margin-left: auto;
 }
 
 .nav-link {
   text-decoration: none;
   color: var(--text-primary);
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+}
+
+.nav-link:hover {
+  color: var(--primary-color);
 }
 
 .signup-btn {
