@@ -14,6 +14,20 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  
+  useEffect(() => {
+    // Check if user arrived from password reset email
+    const hash = window.location.hash;
+    if (hash && hash.includes('#access_token')) {
+      setIsResetMode(true);
+      // This indicates user came from password reset email
+      const type = new URLSearchParams(hash.substring(1)).get('type');
+      if (type === 'recovery') {
+        setResetSent(true);
+      }
+    }
+  }, []);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -133,16 +147,52 @@ const Login = () => {
 
               {resetSent ? (
                 <div className="text-center">
-                  <div className="alert alert-success" role="alert">
-                    <p className="mb-0">Reset link sent!</p>
-                    <p className="small mb-0">Please check your email for instructions.</p>
-                  </div>
-                  <button 
-                    onClick={handleBackToLogin}
-                    className="btn btn-outline-secondary mt-3"
-                  >
-                    Return to login
-                  </button>
+                  {window.location.hash.includes('#access_token') ? (
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      setLoading(true);
+                      try {
+                        const { error } = await supabase.auth.updateUser({
+                          password: newPassword
+                        });
+                        if (error) throw error;
+                        toast.success('Password updated successfully!');
+                        navigate('/login');
+                      } catch (error) {
+                        toast.error(error.message);
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}>
+                      <div className="mb-3">
+                        <label htmlFor="newPassword" className="form-label">New Password</label>
+                        <input
+                          type="password"
+                          className="form-control"
+                          id="newPassword"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <button type="submit" className="btn btn-dark w-100" disabled={loading}>
+                        {loading ? 'Updating...' : 'Update Password'}
+                      </button>
+                    </form>
+                  ) : (
+                    <>
+                      <div className="alert alert-success" role="alert">
+                        <p className="mb-0">Reset link sent!</p>
+                        <p className="small mb-0">Please check your email for instructions.</p>
+                      </div>
+                      <button 
+                        onClick={handleBackToLogin}
+                        className="btn btn-outline-secondary mt-3"
+                      >
+                        Return to login
+                      </button>
+                    </>
+                  )}
                 </div>
               ) : (
                 <form onSubmit={handleResetPassword}>
