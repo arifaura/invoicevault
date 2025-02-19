@@ -441,13 +441,16 @@ const Overview = () => {
                           title="Click to view full size"
                         >
                           <img 
-                            src={invoice.image_url} 
+                            src={supabase.storage
+                              .from('invoice-images')
+                              .getPublicUrl(invoice.image_url.split('invoice-images/')[1])?.data?.publicUrl || invoice.image_url}
                             alt={invoice.title} 
                             className="invoice-thumbnail"
                             loading="lazy"
                             onError={(e) => {
                               e.target.onerror = null;
-                              e.target.src = ''; // Clear the source on error
+                              e.target.src = ''; 
+                              console.error('Image load error for:', invoice.image_url);
                             }}
                           />
                         </div>
