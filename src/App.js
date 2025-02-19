@@ -19,6 +19,8 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
+import Home from './components/Home/Home'; // Import the Home component
+
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -32,7 +34,12 @@ function App() {
               <Toaster position="top-right" />
               <ThemeToggle />
               <Routes>
-                {/* Public routes - only accessible when NOT logged in */}
+                {/* Public routes */}
+                <Route path="/" element={
+                  <PublicRoute>
+                    <Home />
+                  </PublicRoute>
+                } />
                 <Route path="/login" element={
                   <PublicRoute>
                     <Login />
@@ -49,7 +56,7 @@ function App() {
                   </PublicRoute>
                 } />
 
-                {/* Protected routes - only accessible when logged in */}
+                {/* Protected routes */}
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <DashboardLayout />
@@ -61,15 +68,7 @@ function App() {
                   <Route path="settings" element={<Settings />} />
                 </Route>
 
-                {/* Root redirect */}
-                <Route path="/" element={
-                  <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />
-                } />
-
-                {/* Static and 404 pages */}
-                <Route path="/terms" element={<NotFound />} />
-                <Route path="/privacy" element={<NotFound />} />
-                <Route path="/contact" element={<NotFound />} />
+                {/* Catch all route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </div>
