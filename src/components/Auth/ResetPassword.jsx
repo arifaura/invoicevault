@@ -14,21 +14,16 @@ const ResetPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
 
-  // Add useEffect to log URL parameters when component mounts
+  // Remove the second useEffect that was automatically redirecting
   useEffect(() => {
-    console.log('Reset Password Component Mounted');
-    console.log('URL Hash:', window.location.hash);
-    console.log('URL Search Params:', window.location.search);
-    
-    // Check if we're in recovery mode
-    const fragment = window.location.hash;
+    // Log URL parameters for debugging
     const params = new URLSearchParams(window.location.search);
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
+    const hash = new URLSearchParams(window.location.hash.substring(1));
     
-    console.log('Recovery Mode:', fragment === '#recovery');
-    console.log('Access Token Present:', !!accessToken);
-    console.log('Refresh Token Present:', !!refreshToken);
+    console.log('URL Parameters:', {
+      search: Object.fromEntries(params.entries()),
+      hash: Object.fromEntries(hash.entries())
+    });
   }, []);
 
   const handlePasswordChange = (e, isConfirm = false) => {
@@ -60,17 +55,16 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      // Get the recovery token from the URL
-      const fragment = window.location.hash;
+      // Get the token from either URL parameters or hash
       const params = new URLSearchParams(window.location.search);
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
-
-      if (!accessToken && !refreshToken && fragment !== '#recovery') {
-        throw new Error('Invalid or missing recovery token');
+      const hash = new URLSearchParams(window.location.hash.substring(1));
+      const token = params.get('token') || hash.get('access_token');
+      
+      if (!token) {
+        throw new Error('Reset token is missing');
       }
 
-      // Update the user's password
+      // Update the password
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });

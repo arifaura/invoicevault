@@ -16,7 +16,7 @@ const ForgotPassword = ({ onBackToLogin }) => {
     
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password#recovery`
+        redirectTo: `${window.location.origin}/reset-password?type=recovery`
       });
       
       if (error) throw error;
