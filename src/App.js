@@ -21,6 +21,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import Home from './components/Home/Home'; // Import the Home component
+import ResetPassword from './components/Auth/ResetPassword';
 
 function App() {
   return (
@@ -52,6 +53,11 @@ function App() {
                   <Route path="/forgot-password" element={
                     <PublicRoute>
                       <Login isResetMode={true} />
+                    </PublicRoute>
+                  } />
+                  <Route path="/reset-password" element={
+                    <PublicRoute>
+                      <ResetPassword />
                     </PublicRoute>
                   } />
 

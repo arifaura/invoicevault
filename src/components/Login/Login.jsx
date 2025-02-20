@@ -1,33 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
-import { BiArrowBack } from 'react-icons/bi';
 import toast from 'react-hot-toast';
 import { supabase } from '../../utils/supabaseClient';
 import './Login.css';
 import { BsEyeFill, BsEyeSlashFill } from 'react-icons/bs';
 import Logo from '../Common/Logo';
+import ForgotPassword from '../Auth/ForgotPassword';
+import ResetPassword from '../Auth/ResetPassword';
 
-const Login = () => {
+const Login = ({ isResetMode: initialResetMode = false, resetCode = false }) => {
   const navigate = useNavigate();
-  const [isResetMode, setIsResetMode] = useState(false);
-  const [email, setEmail] = useState('');
-  const [resetSent, setResetSent] = useState(false);
+  const [isResetMode, setIsResetMode] = useState(initialResetMode);
   const [loading, setLoading] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  
-  useEffect(() => {
-    // Check if user arrived from password reset email
-    const hash = window.location.hash;
-    if (hash && hash.includes('#access_token')) {
-      setIsResetMode(true);
-      // This indicates user came from password reset email
-      const type = new URLSearchParams(hash.substring(1)).get('type');
-      if (type === 'recovery') {
-        setResetSent(true);
-      }
-    }
-  }, []);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -86,153 +71,37 @@ const Login = () => {
     }
   };
 
-  const handleResetPassword = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/login#access_token`,
-      });
-      
-      if (error) throw error;
-      
-      toast.success('Password reset instructions sent to your email!', {
-        icon: '✉️',
-        duration: 5000
-      });
-      setResetSent(true);
-    } catch (error) {
-      toast.error(error.message || 'Failed to send reset instructions', {
-        icon: '❌'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBackToLogin = () => {
-    setIsResetMode(false);
-    setResetSent(false);
-  };
-
   const isFormValid = () => {
     return formData.email.trim() !== '' && formData.password.trim() !== '';
   };
 
-  if (isResetMode) {
+  // If we're in reset password mode with a code, show the ResetPassword component
+  if (resetCode) {
     return (
       <div className="container">
         <div className="row justify-content-center align-items-center min-vh-100 mx-0">
           <div className="col-12 col-md-10 col-lg-7 px-0 px-sm-2">
-            <div className="card shadow-sm border-0 px-3 px-sm-4 py-3">
-              <button 
-                onClick={handleBackToLogin}
-                className="back-button ms-1 mb-3"
-              >
-                <BiArrowBack size={20} /> Back to login
-              </button>
-
-              <div className="text-center mb-4">
-                <div className="d-flex justify-content-center mb-3">
-                  <Logo size="xlarge" />
-                </div>
-                <h1 className="h4 fw-normal mb-1">Reset your password</h1>
-                {!resetSent && (
-                  <p className="text-muted small">
-                    Enter your email address and we'll send you a link to reset your password.
-                  </p>
-                )}
-              </div>
-
-              {resetSent ? (
-                <div className="text-center">
-                  {window.location.hash.includes('#access_token') ? (
-                    <form onSubmit={async (e) => {
-                      e.preventDefault();
-                      setLoading(true);
-                      try {
-                        const { error } = await supabase.auth.updateUser({
-                          password: newPassword
-                        });
-                        if (error) throw error;
-                        toast.success('Password updated successfully!');
-                        navigate('/login');
-                      } catch (error) {
-                        toast.error(error.message);
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}>
-                      <div className="mb-3">
-                        <label htmlFor="newPassword" className="form-label">New Password</label>
-                        <input
-                          type="password"
-                          className="form-control"
-                          id="newPassword"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <button type="submit" className="btn btn-dark w-100" disabled={loading}>
-                        {loading ? 'Updating...' : 'Update Password'}
-                      </button>
-                    </form>
-                  ) : (
-                    <>
-                      <div className="alert alert-success" role="alert">
-                        <p className="mb-0">Reset link sent!</p>
-                        <p className="small mb-0">Please check your email for instructions.</p>
-                      </div>
-                      <button 
-                        onClick={handleBackToLogin}
-                        className="btn btn-outline-secondary mt-3"
-                      >
-                        Return to login
-                      </button>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <form onSubmit={handleResetPassword} className="d-flex flex-column align-items-center w-100">
-                  <div className="mb-4 w-100">
-                    <label htmlFor="email" className="form-label text-center w-100">Email address</label>
-                    <input 
-                      type="email" 
-                      className="form-control" 
-                      id="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="john@example.com"
-                      required 
-                      disabled={loading}
-                    />
-                  </div>
-                  
-                  <button 
-                    type="submit" 
-                    className="btn btn-dark w-100 py-2"
-                    disabled={loading || !email.trim()}
-                  >
-                    {loading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2 text-center" role="status" aria-hidden="true"></span>
-                        Sending...
-                      </>
-                    ) : (
-                      'Send Reset Link'
-                    )}
-                  </button>
-                </form>
-              )}
-            </div>
+            <ResetPassword />
           </div>
         </div>
       </div>
     );
   }
 
+  // If we're in reset mode (forgot password), show the ForgotPassword component
+  if (isResetMode) {
+    return (
+      <div className="container">
+        <div className="row justify-content-center align-items-center min-vh-100 mx-0">
+          <div className="col-12 col-md-10 col-lg-7 px-0 px-sm-2">
+            <ForgotPassword onBackToLogin={() => setIsResetMode(false)} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Normal login view
   return (
     <div className="container">
       <div className="row justify-content-center align-items-center min-vh-100 mx-0">

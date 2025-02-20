@@ -1,5 +1,5 @@
 .card {
-    border-radius: 10px;
+    border-radius: 16px;
     background-color: #ffffff;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
 }
@@ -71,16 +71,19 @@
 }
 
 .btn-outline-secondary {
-    border-color: #e5e7eb;
+    border: 1px solid #e5e7eb;
     color: #4b5563;
-    background-color: white;
-    height: 40px;
+    background-color: transparent;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
 
 .btn-outline-secondary:hover {
-    background-color: #f9fafb;
-    border-color: #e5e7eb;
-    color: #4b5563;
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+    color: #374151;
 }
 
 .text-muted {
@@ -141,8 +144,23 @@ a:hover {
 
 .alert-success {
     background-color: rgba(16, 185, 129, 0.1);
-    border-color: rgba(16, 185, 129, 0.2);
-    color: #10b981;
+    border: none;
+    color: #047857;
+    padding: 2rem;
+    border-radius: 8px;
+    margin: 2rem 0;
+}
+
+.alert-success h5 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #047857;
+}
+
+.alert-success p {
+    color: #065f46;
+    margin-bottom: 0;
 }
 
 .position-relative {
