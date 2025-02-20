@@ -92,7 +92,7 @@ const Login = () => {
     
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/login#access_token`,
       });
       
       if (error) throw error;
@@ -195,9 +195,9 @@ const Login = () => {
                   )}
                 </div>
               ) : (
-                <form onSubmit={handleResetPassword}>
-                  <div className="mb-3">
-                    <label htmlFor="email" className="form-label">Email address</label>
+                <form onSubmit={handleResetPassword} className="d-flex flex-column align-items-center w-100">
+                  <div className="mb-4 w-100">
+                    <label htmlFor="email" className="form-label text-center w-100">Email address</label>
                     <input 
                       type="email" 
                       className="form-control" 
@@ -206,11 +206,23 @@ const Login = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="john@example.com"
                       required 
+                      disabled={loading}
                     />
                   </div>
                   
-                  <button type="submit" className="btn btn-dark w-100 py-2">
-                    Send reset link
+                  <button 
+                    type="submit" 
+                    className="btn btn-dark w-100 py-2"
+                    disabled={loading || !email.trim()}
+                  >
+                    {loading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2 text-center" role="status" aria-hidden="true"></span>
+                        Sending...
+                      </>
+                    ) : (
+                      'Send Reset Link'
+                    )}
                   </button>
                 </form>
               )}
