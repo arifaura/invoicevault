@@ -89,6 +89,7 @@ const Overview = () => {
   const [deleteAlert, setDeleteAlert] = useState({ show: false, invoice: null });
   const [previewImage, setPreviewImage] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [imageErrors, setImageErrors] = useState({});
 
   // Calculate stats from invoices data
   const stats = useMemo(() => {
@@ -435,24 +436,37 @@ const Overview = () => {
                       {invoice?.image_url ? (
                         <div 
                           className="image-wrapper"
-                          onClick={() => setPreviewImage(invoice.image_url)}
+                          onClick={() => {
+                            const imageUrl = supabase.storage
+                              .from('invoice-images')
+                              .getPublicUrl(invoice.image_url).data.publicUrl;
+                            setPreviewImage(imageUrl);
+                          }}
                           role="button"
                           tabIndex={0}
                           title="Click to view full size"
                         >
-                          <img 
-                            src={supabase.storage
-                              .from('invoice-images')
-                              .getPublicUrl(invoice.image_url)?.data?.publicUrl}
-                            alt={invoice.title} 
-                            className="invoice-thumbnail"
-                            loading="lazy"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = '/logo.jpg'; 
-                              console.error('Image load error for:', invoice.image_url);
-                            }}
-                          />
+                          {imageErrors[invoice.id] ? (
+                            <div className="no-image">
+                              <RiFileListLine size={20} />
+                            </div>
+                          ) : (
+                            <img 
+                              src={supabase.storage
+                                .from('invoice-images')
+                                .getPublicUrl(invoice.image_url).data.publicUrl}
+                              alt={invoice.title} 
+                              className="invoice-thumbnail"
+                              loading="lazy"
+                              onError={(e) => {
+                                console.error('Image load error:', invoice.image_url);
+                                setImageErrors(prev => ({
+                                  ...prev,
+                                  [invoice.id]: true
+                                }));
+                              }}
+                            />
+                          )}
                         </div>
                       ) : (
                         <div className="no-image">

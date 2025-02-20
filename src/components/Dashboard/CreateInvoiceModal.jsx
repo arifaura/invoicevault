@@ -101,12 +101,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
         throw error;
       }
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('invoice-images')
-        .getPublicUrl(filePath);
-
-      return publicUrl;
+      return filePath; // Return the file path instead of the public URL
     } catch (error) {
       console.error('Error uploading image:', error);
       toast.error('Failed to upload image. Please try again.');
@@ -124,6 +119,8 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
       let imageUrl = null;
       if (files.mainImage && files.mainImage instanceof File) {
         imageUrl = await uploadImageToStorage(files.mainImage);
+      } else if (initialData?.image_url) {
+        imageUrl = initialData.image_url; // Keep existing image URL if not changed
       }
 
       // If in edit mode, update existing vendor
@@ -173,6 +170,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
         category: formData.category,
         warranty_period: formData.warranty_period,
         notes: formData.notes,
+        image_url: imageUrl,
         updated_at: new Date().toISOString()
       };
 
