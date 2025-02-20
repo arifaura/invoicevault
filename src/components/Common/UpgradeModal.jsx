@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FiX,
   FiCoffee,
@@ -8,12 +8,110 @@ import {
   FiThumbsUp,
   FiThumbsDown,
 } from "react-icons/fi";
+import { getFeedbackCounts, submitFeedback, getUserVote } from "../../utils/supabaseClient";
+import { useAuth } from "../../context/AuthContext";
+import { toast } from "react-hot-toast";
 import "./UpgradeModal.css";
 
 const UpgradeModal = ({ isOpen, onClose }) => {
-  const [likes, setLikes] = useState(128);
-  const [dislikes, setDislikes] = useState(12);
+  const [likes, setLikes] = useState(0);
+  const [dislikes, setDislikes] = useState(0);
   const [currentVote, setCurrentVote] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadData = async () => {
+      if (!isOpen) return;
+      
+      setIsInitialLoading(true);
+      try {
+        const counts = await getFeedbackCounts();
+        if (!mounted) return;
+        
+        setLikes(counts.likes);
+        setDislikes(counts.dislikes);
+
+        if (user) {
+          const userVote = await getUserVote(user.id);
+          if (!mounted) return;
+          setCurrentVote(userVote);
+        }
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+        if (mounted) {
+          toast.error('Failed to load feedback data');
+        }
+      } finally {
+        if (mounted) {
+          setIsInitialLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isOpen, user]);
+
+  const handleVote = async (type) => {
+    if (!user) {
+      toast.error('Please login to vote');
+      return;
+    }
+
+    if (isLoading) return;
+
+    try {
+      setIsLoading(true);
+      const result = await submitFeedback(type, user.id);
+
+      // Update UI based on action
+      switch (result.action) {
+        case 'removed':
+          if (type === 'like') {
+            setLikes(prev => Math.max(0, prev - 1));
+          } else {
+            setDislikes(prev => Math.max(0, prev - 1));
+          }
+          setCurrentVote(null);
+          toast.success('Vote removed');
+          break;
+
+        case 'changed':
+          if (type === 'like') {
+            setLikes(prev => prev + 1);
+            setDislikes(prev => Math.max(0, prev - 1));
+          } else {
+            setDislikes(prev => prev + 1);
+            setLikes(prev => Math.max(0, prev - 1));
+          }
+          setCurrentVote(type);
+          toast.success('Vote updated');
+          break;
+
+        case 'added':
+          if (type === 'like') {
+            setLikes(prev => prev + 1);
+          } else {
+            setDislikes(prev => prev + 1);
+          }
+          setCurrentVote(type);
+          toast.success('Thank you for your feedback!');
+          break;
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      toast.error('Failed to submit feedback');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -35,35 +133,6 @@ const UpgradeModal = ({ isOpen, onClose }) => {
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
-    }
-  };
-
-  const handleVote = (type) => {
-    if (currentVote === type) {
-      // Unvote
-      if (type === "like") {
-        setLikes((prev) => prev - 1);
-      } else {
-        setDislikes((prev) => prev - 1);
-      }
-      setCurrentVote(null);
-    } else {
-      // Change vote
-      if (currentVote === "like") {
-        setLikes((prev) => prev - 1);
-        setDislikes((prev) => prev + 1);
-      } else if (currentVote === "dislike") {
-        setDislikes((prev) => prev - 1);
-        setLikes((prev) => prev + 1);
-      } else {
-        // New vote
-        if (type === "like") {
-          setLikes((prev) => prev + 1);
-        } else {
-          setDislikes((prev) => prev + 1);
-        }
-      }
-      setCurrentVote(type);
     }
   };
 
@@ -113,23 +182,21 @@ const UpgradeModal = ({ isOpen, onClose }) => {
           <div className="feedback-section">
             <p className="feedback-title">Did you like our website?</p>
             <div className="vote-buttons animate-fade-in">
-              <button
-                className={`vote-button like ${
-                  currentVote === "like" ? "voted" : ""
-                }`}
-                onClick={() => handleVote("like")}
+              <button 
+                className={`vote-button like ${currentVote === 'like' ? 'voted' : ''} ${isLoading ? 'loading' : ''}`}
+                onClick={() => handleVote('like')}
+                disabled={isLoading || isInitialLoading}
               >
                 <FiThumbsUp className="vote-icon" />
-                <span>{likes}</span>
+                <span>{isInitialLoading ? '...' : likes}</span>
               </button>
-              <button
-                className={`vote-button dislike ${
-                  currentVote === "dislike" ? "voted" : ""
-                }`}
-                onClick={() => handleVote("dislike")}
+              <button 
+                className={`vote-button dislike ${currentVote === 'dislike' ? 'voted' : ''} ${isLoading ? 'loading' : ''}`}
+                onClick={() => handleVote('dislike')}
+                disabled={isLoading || isInitialLoading}
               >
                 <FiThumbsDown className="vote-icon" />
-                <span>{dislikes}</span>
+                <span>{isInitialLoading ? '...' : dislikes}</span>
               </button>
             </div>
           </div>
