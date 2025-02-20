@@ -1,0 +1,99 @@
+.sidebar {
+  width: 250px;
+  height: 100vh;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-color);
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1.5rem;
+}
+
+.logo {
+  margin-bottom: 2rem;
+}
+
+.logo h2 {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.menu-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.menu-item.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* Upgrade Button Styles */
+.upgrade-button {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.upgrade-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.upgrade-icon {
+  font-size: 1.25rem;
+  color: white;
+}
+
+.upgrade-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.upgrade-text .primary {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: white;
+}
+
+.upgrade-text .secondary {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  color: white;
+} 

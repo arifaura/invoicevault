@@ -6,12 +6,14 @@ import Footer from './Footer';
 import './DashboardLayout.css';
 import { useAuth } from '../../context/AuthContext';
 import { ProfileProvider } from '../../context/ProfileContext';
+import { useUpgrade } from '../../context/UpgradeContext';
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { user, isAuthenticated } = useAuth();
+  const { isUpgradeModalOpen } = useUpgrade();
   
-  console.log('Dashboard Layout:', { user, isAuthenticated });
+  console.log('Dashboard Layout:', { user, isAuthenticated, isUpgradeModalOpen });
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);

@@ -9,8 +9,11 @@ import {
 import { HiOutlineDocumentReport } from 'react-icons/hi';
 import { BiAnalyse } from 'react-icons/bi';
 import './Sidebar.css';
+import { useUpgrade } from '../../context/UpgradeContext';
 
 const Sidebar = ({ isOpen }) => {
+  const { openUpgradeModal } = useUpgrade();
+
   const menuItems = [
     {
       path: '/dashboard',
@@ -28,6 +31,11 @@ const Sidebar = ({ isOpen }) => {
       icon: <RiSettings4Line size={20} />
     }
   ];
+
+  const handleUpgradeClick = () => {
+    console.log('Opening upgrade modal...');
+    openUpgradeModal();
+  };
 
   return (
     <aside className={`dashboard-sidebar ${!isOpen ? 'collapsed' : ''}`}>
@@ -48,9 +56,11 @@ const Sidebar = ({ isOpen }) => {
 
       <div className="sidebar-footer">
         <div className="upgrade-pro">
-          <p className="upgrade-text">Upgrade to Pro</p>
-          <p className="upgrade-subtext">Access all features</p>
-          <button className="btn btn-upgrade">Upgrade</button>
+          <p className="upgrade-text text-white-50">Upgrade to Pro</p>
+          <p className="upgrade-subtext text-white-50">Access all features</p>
+          <button className="btn btn-upgrade" onClick={handleUpgradeClick}>
+            Upgrade
+          </button>
         </div>
       </div>
     </aside>
