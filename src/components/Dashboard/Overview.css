@@ -965,3 +965,154 @@ body::-webkit-scrollbar-thumb:hover {
   color: var(--text-secondary);
   margin-top: 2px;
 }
+
+/* Add at the beginning of the file */
+@keyframes slideInFromLeft {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromRight {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Apply animations to elements */
+.welcome-section {
+  animation: slideInFromLeft 0.6s ease-out;
+}
+
+.stats-grid {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.stat-card {
+  animation: scaleIn 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+.actions-bar {
+  animation: slideInFromRight 0.6s ease-out;
+}
+
+.recent-invoices-section {
+  animation: fadeInUp 0.8s ease-out;
+  animation-delay: 0.3s;
+  animation-fill-mode: both;
+}
+
+/* Enhance existing hover animations */
+.stat-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.action-icon-btn {
+  transition: all 0.3s ease;
+}
+
+.action-icon-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* Table row hover animation */
+.recent-invoices-table tr {
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.recent-invoices-table tr:hover {
+  transform: scale(1.01);
+  background-color: var(--bg-hover);
+}
+
+/* Image hover animation */
+.image-wrapper {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.image-wrapper:hover {
+  transform: scale(1.1);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Status badge animation */
+.status-badge {
+  transition: all 0.3s ease;
+}
+
+.status-badge:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+/* Add this to your existing CSS */
+.stat-value {
+  font-family: 'Inter', sans-serif;
+  transition: color 0.3s ease;
+}
+
+.stat-card:hover .stat-value {
+  color: var(--primary-color);
+}
+
+/* Loading animation */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, 
+    var(--bg-secondary) 0%, 
+    var(--bg-hover) 50%, 
+    var(--bg-secondary) 100%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}

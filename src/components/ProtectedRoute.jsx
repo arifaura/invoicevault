@@ -15,7 +15,7 @@ const ProtectedRoute = ({ children }) => {
   if (!isAuthenticated && !location.pathname.includes('/login') && !location.pathname.includes('/signup')) {
     // Only store redirect URL if not already on login/signup page
     if (!['/login', '/signup'].includes(location.pathname)) {
-      sessionStorage.setItem('redirectUrl', location.pathname);
+      localStorage.setItem('redirectUrl', location.pathname);
     }
     
     // Only show toast if not already on login/signup page

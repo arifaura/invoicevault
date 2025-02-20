@@ -11,10 +11,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: window.sessionStorage,  // Use sessionStorage instead of localStorage
+    storage: window.localStorage,  // Use localStorage instead of sessionStorage
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    sessionExpirySeconds: 3600 // Set session expiry to 1 hour (3600 seconds)
   }
 });
 

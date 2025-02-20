@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
           setSession(session);
           setUser(session.user);
           
-          // Check if welcome message has been shown in this session
+          // Check if welcome message has been shown
           const hasShownWelcome = localStorage.getItem('hasShownWelcome');
           if (!hasShownWelcome && !isInitialLoad) {
             toast.success('Welcome back!', {
@@ -39,14 +39,14 @@ export const AuthProvider = ({ children }) => {
 
     initializeAuth();
 
-    // Set up session refresh interval
+    // Set up session refresh interval (every 45 minutes to ensure token is refreshed before expiry)
     const refreshInterval = setInterval(async () => {
       const session = await refreshSession();
       if (session) {
         setSession(session);
         setUser(session.user);
       }
-    }, 3600000); // Refresh token every hour
+    }, 2700000); // Refresh token every 45 minutes (2700000 ms)
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -80,9 +80,9 @@ export const AuthProvider = ({ children }) => {
           }
 
           // Handle redirect after successful sign-in
-          const redirectUrl = sessionStorage.getItem('redirectUrl');
+          const redirectUrl = localStorage.getItem('redirectUrl');
           if (redirectUrl && !isInitialLoad) {
-            sessionStorage.removeItem('redirectUrl');
+            localStorage.removeItem('redirectUrl');
             window.location.href = redirectUrl;
           }
         }
@@ -92,14 +92,13 @@ export const AuthProvider = ({ children }) => {
         // Reset all message flags on sign out
         localStorage.removeItem('hasShownWelcome');
         localStorage.removeItem('hasShownSignIn');
+        localStorage.removeItem('redirectUrl');
         
         if (event === 'SIGNED_OUT') {
           toast.success('Successfully signed out!', {
             icon: '👋',
             duration: 3000
           });
-          // Clear any stored redirect URLs on sign out
-          sessionStorage.removeItem('redirectUrl');
         }
       }
       
@@ -121,7 +120,7 @@ export const AuthProvider = ({ children }) => {
       // Reset all message flags
       localStorage.removeItem('hasShownWelcome');
       localStorage.removeItem('hasShownSignIn');
-      sessionStorage.clear();
+      localStorage.removeItem('redirectUrl');
     } catch (error) {
       console.error('Error signing out:', error);
     }

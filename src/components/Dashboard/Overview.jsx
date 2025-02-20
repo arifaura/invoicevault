@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 import ImagePreviewModal from '../Common/ImagePreviewModal';
 import Skeleton from '../Common/Skeleton';
 import PDFThumbnail from '../Common/PDFThumbnail';
+import AnimatedCounter from '../Common/AnimatedCounter';
 
 const StatCardSkeleton = () => (
   <div className="stat-card skeleton-card">
@@ -99,7 +100,7 @@ const Overview = () => {
     
     // Helper function to normalize status
     const normalizeStatus = (status) => {
-      if (!status) return 'paid'; // Default to paid if no status
+      if (!status) return 'paid';
       return status.toLowerCase().trim();
     };
 
@@ -115,35 +116,28 @@ const Overview = () => {
       normalizeStatus(invoice.status) === 'emi'
     ).length;
 
-    console.log('Status counts:', {
-      total: totalInvoices,
-      pending: pendingInvoices,
-      paid: paidInvoices,
-      emi: emiInvoices
-    });
-
     return [
       {
         title: 'Total Invoices',
-        value: totalInvoices.toString(),
+        value: totalInvoices,
         icon: <RiFileListLine size={24} />,
         color: 'blue'
       },
       {
         title: 'Pending',
-        value: pendingInvoices.toString(),
+        value: pendingInvoices,
         icon: <RiMoneyDollarCircleLine size={24} />,
         color: 'yellow'
       },
       {
         title: 'Paid',
-        value: paidInvoices.toString(),
+        value: paidInvoices,
         icon: <HiOutlineDocumentReport size={24} />,
         color: 'green'
       },
       {
         title: 'Emi',
-        value: emiInvoices.toString(),
+        value: emiInvoices,
         icon: <RiUserLine size={24} />,
         color: 'red'
       }
@@ -313,7 +307,9 @@ const Overview = () => {
             <div key={index} className={`stat-card ${stat.color}`}>
               <div className="stat-icon">{stat.icon}</div>
               <div className="stat-info">
-                <h3 className="stat-value">{stat.value}</h3>
+                <h3 className="stat-value">
+                  <AnimatedCounter end={stat.value} duration={2000} />
+                </h3>
                 <p className="stat-title">{stat.title}</p>
               </div>
             </div>

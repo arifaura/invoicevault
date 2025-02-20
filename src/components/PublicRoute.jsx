@@ -8,10 +8,10 @@ const PublicRoute = ({ children }) => {
   // If user is authenticated and tries to access login/signup pages,
   // redirect them to dashboard
   if (isAuthenticated) {
-    // Get the redirect URL from session storage or default to dashboard
-    const redirectUrl = sessionStorage.getItem('redirectUrl') || '/dashboard';
+    // Get the redirect URL from local storage or default to dashboard
+    const redirectUrl = localStorage.getItem('redirectUrl') || '/dashboard';
     // Clear the stored URL
-    sessionStorage.removeItem('redirectUrl');
+    localStorage.removeItem('redirectUrl');
     return <Navigate to={redirectUrl} replace />;
   }
 
