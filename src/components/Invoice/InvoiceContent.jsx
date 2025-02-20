@@ -1,6 +1,7 @@
 import React from "react";
 import "./InvoiceContent.css";
 import { formatCurrency } from "../../utils/formatters";
+import { supabase } from "../../utils/supabaseClient";
 import {
   FiCalendar,
   FiHash,
@@ -23,6 +24,16 @@ const InvoiceContent = ({ invoice, contentRef }) => {
     if (!mode) return "N/A";
     return mode.replace(/_/g, " ").toUpperCase();
   };
+
+  // Get public URL for image
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return null;
+    return supabase.storage
+      .from('invoice-images')
+      .getPublicUrl(imageUrl).data.publicUrl;
+  };
+
+  const isPDF = invoice?.image_url?.toLowerCase().endsWith('.pdf');
 
   return (
     <div className="invoice-content modern" ref={contentRef}>
@@ -58,13 +69,23 @@ const InvoiceContent = ({ invoice, contentRef }) => {
       <div className="invoice-header-info d-flex justify-content-between">
         <h1 className="align-self-center">{invoice.title}</h1>
         {invoice?.image_url && (
-          <div>
-            <img
-              src={invoice.image_url}
-              alt={invoice.title}
-              className="img-fluid img-thumbnail"
-              style={{ width: "500px", height: "500px" }}
-            />
+          <div className="invoice-image-container">
+            {isPDF ? (
+              <embed
+                src={getImageUrl(invoice.image_url)}
+                type="application/pdf"
+                width="500"
+                height="500"
+                className="pdf-preview"
+              />
+            ) : (
+              <img
+                src={getImageUrl(invoice.image_url)}
+                alt={invoice.title}
+                className="img-fluid img-thumbnail"
+                style={{ width: "500px", height: "500px", objectFit: "contain" }}
+              />
+            )}
           </div>
         )}
       </div>

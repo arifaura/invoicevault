@@ -14,6 +14,7 @@ import { supabase } from '../../utils/supabaseClient';
 import toast from 'react-hot-toast';
 import ImagePreviewModal from '../Common/ImagePreviewModal';
 import Skeleton from '../Common/Skeleton';
+import PDFThumbnail from '../Common/PDFThumbnail';
 
 const StatCardSkeleton = () => (
   <div className="stat-card skeleton-card">
@@ -205,6 +206,12 @@ const Overview = () => {
 
       if (error) throw error;
 
+      // Get the public URL for the image
+      const imageUrl = fullInvoice.image_url ? 
+        supabase.storage
+          .from('invoice-images')
+          .getPublicUrl(fullInvoice.image_url).data.publicUrl : null;
+
       // Prepare the data for the form
       const formData = {
         title: fullInvoice.title || '',
@@ -217,11 +224,15 @@ const Overview = () => {
         category: fullInvoice.category || '',
         warranty_period: fullInvoice.warranty_period || '',
         notes: fullInvoice.notes || '',
-        image_url: fullInvoice.image_url || null
+        image_url: imageUrl
       };
 
       // Set the selected invoice with the form data
-      setSelectedInvoice({ ...fullInvoice, formData });
+      setSelectedInvoice({ 
+        ...fullInvoice, 
+        formData,
+        image_url: imageUrl // Add the public URL to the invoice object
+      });
       setIsCreateModalOpen(true);
     } catch (error) {
       console.error('Error fetching invoice details:', error);
@@ -437,10 +448,10 @@ const Overview = () => {
                         <div 
                           className="image-wrapper"
                           onClick={() => {
-                            const imageUrl = supabase.storage
+                            const fileUrl = supabase.storage
                               .from('invoice-images')
                               .getPublicUrl(invoice.image_url).data.publicUrl;
-                            setPreviewImage(imageUrl);
+                            setPreviewImage(fileUrl);
                           }}
                           role="button"
                           tabIndex={0}
@@ -450,6 +461,14 @@ const Overview = () => {
                             <div className="no-image">
                               <RiFileListLine size={20} />
                             </div>
+                          ) : invoice.image_url.toLowerCase().endsWith('.pdf') ? (
+                            <PDFThumbnail 
+                              url={supabase.storage
+                                .from('invoice-images')
+                                .getPublicUrl(invoice.image_url).data.publicUrl}
+                              width={48}
+                              height={48}
+                            />
                           ) : (
                             <img 
                               src={supabase.storage

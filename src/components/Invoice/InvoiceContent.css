@@ -465,4 +465,27 @@
   display: block;
   border-radius: 8px;
   border: 1px solid var(--border-color);
+}
+
+.invoice-image-container {
+  margin-bottom: 2rem;
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 500px;
+  max-height: 500px;
+}
+
+.invoice-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.invoice-image-container .pdf-preview {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
 } 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiUpload, FiCamera } from 'react-icons/fi';
+import { RiFileListLine } from 'react-icons/ri';
 import './CreateInvoiceModal.css';
 import { supabase } from '../../utils/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
@@ -24,7 +25,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
   });
 
   const [files, setFiles] = useState({
-    mainImage: initialData?.mainImage || null
+    mainImage: null
   });
 
   useEffect(() => {
@@ -69,6 +70,9 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
   const uploadImageToStorage = async (file) => {
     if (!file) return null;
 
+    // If the file is already a URL (meaning it's an existing file), return it
+    if (typeof file === 'string') return file.split('invoice-images/')[1];
+
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
     if (!allowedTypes.includes(file.type)) {
@@ -101,7 +105,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
         throw error;
       }
 
-      return filePath; // Return the file path instead of the public URL
+      return filePath;
     } catch (error) {
       console.error('Error uploading image:', error);
       toast.error('Failed to upload image. Please try again.');
@@ -258,7 +262,21 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
               <div className="main-upload-area">
                 {files.mainImage ? (
                   <div className="preview-image">
-                    {files.mainImage instanceof File && files.mainImage.type === 'application/pdf' ? (
+                    {typeof files.mainImage === 'string' && files.mainImage.toLowerCase().endsWith('.pdf') ? (
+                      <div className="pdf-preview">
+                        <embed 
+                          src={files.mainImage}
+                          type="application/pdf"
+                          width="100%"
+                          height="300px"
+                        />
+                      </div>
+                    ) : typeof files.mainImage === 'string' ? (
+                      <img 
+                        src={files.mainImage}
+                        alt="Preview" 
+                      />
+                    ) : files.mainImage instanceof File && files.mainImage.type === 'application/pdf' ? (
                       <div className="pdf-preview">
                         <embed 
                           src={URL.createObjectURL(files.mainImage)} 
@@ -269,7 +287,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
                       </div>
                     ) : (
                       <img 
-                        src={files.mainImage instanceof File ? URL.createObjectURL(files.mainImage) : files.mainImage} 
+                        src={URL.createObjectURL(files.mainImage)} 
                         alt="Preview" 
                       />
                     )}

@@ -906,3 +906,62 @@ body::-webkit-scrollbar-thumb:hover {
 .skeleton-row .image-wrapper .skeleton {
     border-radius: 6px;
 } 
+
+.pdf-thumbnail {
+  width: 48px;
+  height: 48px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.pdf-thumbnail:hover {
+  transform: scale(1.05);
+  border-color: var(--link-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pdf-thumbnail canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pdf-thumbnail .pdf-label {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 8px;
+  font-weight: 500;
+  z-index: 1;
+}
+
+/* Fallback styles when canvas fails */
+.pdf-thumbnail.fallback {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.pdf-thumbnail.fallback .pdf-label {
+  position: static;
+  transform: none;
+  background: none;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
