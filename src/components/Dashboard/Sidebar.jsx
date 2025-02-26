@@ -33,7 +33,7 @@ const Sidebar = ({ isOpen }) => {
   ];
 
   const handleUpgradeClick = () => {
-    console.log('Opening upgrade modal...');
+    // console.log('Opening upgrade modal...');
     openUpgradeModal();
   };
 

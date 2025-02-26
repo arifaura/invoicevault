@@ -71,7 +71,7 @@ const Settings = () => {
         });
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      // console.error('Error fetching profile:', error);
       toast.error('Failed to load profile data');
     }
   };
@@ -131,7 +131,7 @@ const Settings = () => {
       
       toast.success('Profile picture updated successfully!');
     } catch (error) {
-      console.error('Error uploading avatar:', error);
+      // console.error('Error uploading avatar:', error);
       toast.error(error.message || 'Failed to upload profile picture');
     } finally {
       setLoading(false);
@@ -158,7 +158,7 @@ const Settings = () => {
 
       toast.success('Profile updated successfully!');
     } catch (error) {
-      console.error('Error updating profile:', error);
+      // console.error('Error updating profile:', error);
       toast.error(error.message || 'Failed to update profile');
     } finally {
       setLoading(false);
@@ -191,7 +191,7 @@ const Settings = () => {
 
       toast.success('Password updated successfully!');
     } catch (error) {
-      console.error('Error updating password:', error);
+      // console.error('Error updating password:', error);
       toast.error(error.message || 'Failed to update password');
     } finally {
       setLoading(false);

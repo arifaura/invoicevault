@@ -25,8 +25,6 @@ const UpgradeModal = ({ isOpen, onClose }) => {
     let mounted = true;
 
     const loadData = async () => {
-      if (!isOpen) return;
-      
       setIsInitialLoading(true);
       try {
         const counts = await getFeedbackCounts();
@@ -54,10 +52,21 @@ const UpgradeModal = ({ isOpen, onClose }) => {
 
     loadData();
 
+    // Set up real-time subscription for vote updates
+    const interval = setInterval(loadData, 5000);
+
     return () => {
       mounted = false;
+      clearInterval(interval);
     };
-  }, [isOpen, user]);
+  }, [user]);
+
+  // Load initial data when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setIsInitialLoading(true);
+    }
+  }, [isOpen]);
 
   const handleVote = async (type) => {
     if (!user) {
@@ -181,6 +190,16 @@ const UpgradeModal = ({ isOpen, onClose }) => {
 
           <div className="feedback-section">
             <p className="feedback-title">Did you like our website?</p>
+            <div className="vote-counts">
+              <div className="vote-count">
+                <span className="count">{isInitialLoading ? '...' : likes}</span>
+                <span className="label">Likes</span>
+              </div>
+              <div className="vote-count">
+                <span className="count">{isInitialLoading ? '...' : dislikes}</span>
+                <span className="label">Dislikes</span>
+              </div>
+            </div>
             <div className="vote-buttons animate-fade-in">
               <button 
                 className={`vote-button like ${currentVote === 'like' ? 'voted' : ''} ${isLoading ? 'loading' : ''}`}
@@ -188,7 +207,7 @@ const UpgradeModal = ({ isOpen, onClose }) => {
                 disabled={isLoading || isInitialLoading}
               >
                 <FiThumbsUp className="vote-icon" />
-                <span>{isInitialLoading ? '...' : likes}</span>
+                <span>Like</span>
               </button>
               <button 
                 className={`vote-button dislike ${currentVote === 'dislike' ? 'voted' : ''} ${isLoading ? 'loading' : ''}`}
@@ -196,7 +215,7 @@ const UpgradeModal = ({ isOpen, onClose }) => {
                 disabled={isLoading || isInitialLoading}
               >
                 <FiThumbsDown className="vote-icon" />
-                <span>{isInitialLoading ? '...' : dislikes}</span>
+                <span>Dislike</span>
               </button>
             </div>
           </div>

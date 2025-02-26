@@ -29,7 +29,7 @@ export const generatePDF = async (content, filename) => {
 
     pdf.save(`${filename}.pdf`);
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    // console.error('Error generating PDF:', error);
     throw error;
   }
 }; 

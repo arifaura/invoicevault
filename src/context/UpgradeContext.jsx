@@ -11,20 +11,20 @@ export const UpgradeProvider = ({ children }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    console.log('UpgradeProvider mounted');
+    // console.log('UpgradeProvider mounted');
   }, []);
 
   useEffect(() => {
-    console.log('Modal state changed:', isModalOpen);
+    // console.log('Modal state changed:', isModalOpen);
   }, [isModalOpen]);
 
   const openModal = useCallback(() => {
-    console.log('Opening modal...');
+    // console.log('Opening modal...');
     setIsModalOpen(true);
   }, []);
 
   const closeModal = useCallback(() => {
-    console.log('Closing modal...');
+    // console.log('Closing modal...');
     setIsModalOpen(false);
   }, []);
 
@@ -49,7 +49,7 @@ export const useUpgrade = () => {
   const context = useContext(UpgradeContext);
   
   if (!context) {
-    console.error('useUpgrade must be used within an UpgradeProvider');
+    // console.error('useUpgrade must be used within an UpgradeProvider');
     throw new Error('useUpgrade must be used within an UpgradeProvider');
   }
   

@@ -95,7 +95,7 @@ const Overview = () => {
 
   // Calculate stats from invoices data
   const stats = useMemo(() => {
-    console.log('Calculating stats from invoices:', recentInvoices);
+    // console.log('Calculating stats from invoices:', recentInvoices);
     const totalInvoices = recentInvoices.length;
     
     // Helper function to normalize status
@@ -175,7 +175,7 @@ const Overview = () => {
       if (error) throw error;
       setRecentInvoices(data);
     } catch (error) {
-      console.error('Error fetching invoices:', error);
+      // console.error('Error fetching invoices:', error);
       toast.error('Failed to load invoices');
     } finally {
       setLoading(false);
@@ -229,7 +229,7 @@ const Overview = () => {
       });
       setIsCreateModalOpen(true);
     } catch (error) {
-      console.error('Error fetching invoice details:', error);
+      // console.error('Error fetching invoice details:', error);
       toast.error('Failed to load invoice details', {
         duration: 4000
       });
@@ -265,7 +265,7 @@ const Overview = () => {
       // Refresh the invoices list
       await fetchInvoices();
     } catch (error) {
-      console.error('Error deleting invoice:', error);
+      // console.error('Error deleting invoice:', error);
       toast.error('Failed to delete invoice', { id: 'deleteInvoice' });
     } finally {
       setDeleteAlert({ show: false, invoice: null });
@@ -276,7 +276,7 @@ const Overview = () => {
     try {
       navigate(`/dashboard/invoice/${invoice.id.replace('#', '')}?download=true`);
     } catch (error) {
-      console.error('Error navigating to invoice:', error);
+      // console.error('Error navigating to invoice:', error);
       addNotification({
         type: 'error',
         message: `Failed to download invoice ${invoice.id}`,
@@ -474,7 +474,7 @@ const Overview = () => {
                               className="invoice-thumbnail"
                               loading="lazy"
                               onError={(e) => {
-                                console.error('Image load error:', invoice.image_url);
+                                // console.error('Image load error:', invoice.image_url);
                                 setImageErrors(prev => ({
                                   ...prev,
                                   [invoice.id]: true

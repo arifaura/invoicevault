@@ -31,7 +31,7 @@ export const ProfileProvider = ({ children }) => {
           .single();
 
         if (error) {
-          console.error('Error fetching profile:', error);
+          // console.error('Error fetching profile:', error);
           return;
         }
 
@@ -41,7 +41,7 @@ export const ProfileProvider = ({ children }) => {
           setProfile(data);
         }
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        // console.error('Error fetching profile:', error);
       } finally {
         setLoading(false);
       }
@@ -91,7 +91,7 @@ export const ProfileProvider = ({ children }) => {
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error updating profile:', error);
+      // console.error('Error updating profile:', error);
       return { data: null, error };
     }
   };

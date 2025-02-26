@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
           }
         }
       } catch (error) {
-        console.error('Session check error:', error);
+        // console.error('Session check error:', error);
       } finally {
         setLoading(false);
         setIsInitialLoad(false);
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth event:', event);
+      // console.log('Auth event:', event);
       
       if (session) {
         setUser(session.user);
@@ -122,7 +122,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('hasShownSignIn');
       localStorage.removeItem('redirectUrl');
     } catch (error) {
-      console.error('Error signing out:', error);
+      // console.error('Error signing out:', error);
     }
   };
 

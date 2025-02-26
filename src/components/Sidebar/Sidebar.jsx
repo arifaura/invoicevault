@@ -9,16 +9,16 @@ const Sidebar = () => {
   const upgradeContext = useUpgrade();
 
   useEffect(() => {
-    console.log('Sidebar mounted, upgrade context:', upgradeContext);
+    // console.log('Sidebar mounted, upgrade context:', upgradeContext);
   }, [upgradeContext]);
 
   const handleUpgradeClick = (e) => {
-    console.log('Upgrade button clicked');
+    // console.log('Upgrade button clicked');
     e.preventDefault();
     e.stopPropagation();
     
     if (upgradeContext && typeof upgradeContext.openUpgradeModal === 'function') {
-      console.log('Calling openUpgradeModal');
+      // console.log('Calling openUpgradeModal');
       upgradeContext.openUpgradeModal();
     } else {
       console.error('openUpgradeModal is not a function:', upgradeContext);

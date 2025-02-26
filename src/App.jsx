@@ -10,7 +10,7 @@ import { Toaster } from 'react-hot-toast';
 // ... other imports ...
 
 function App() {
-  console.log('App rendering');
+  // console.log('App rendering');
   
   return (
     <Router>

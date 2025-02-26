@@ -13,7 +13,7 @@ const DashboardLayout = () => {
   const { user, isAuthenticated } = useAuth();
   const { isUpgradeModalOpen } = useUpgrade();
   
-  console.log('Dashboard Layout:', { user, isAuthenticated, isUpgradeModalOpen });
+  // console.log('Dashboard Layout:', { user, isAuthenticated, isUpgradeModalOpen });
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);

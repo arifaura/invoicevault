@@ -6,7 +6,7 @@ const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 // Validate environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables. Please check your .env file.');
+  // console.error('Missing Supabase environment variables. Please check your .env file.');
 }
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -24,7 +24,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const getSessionData = async () => {
   const { data: { session }, error } = await supabase.auth.getSession();
   if (error) {
-    console.error('Error fetching session:', error.message);
+    // console.error('Error fetching session:', error.message);
     return null;
   }
   return session;
@@ -34,7 +34,7 @@ export const getSessionData = async () => {
 export const refreshSession = async () => {
   const { data: { session }, error } = await supabase.auth.refreshSession();
   if (error) {
-    console.error('Error refreshing session:', error.message);
+    // console.error('Error refreshing session:', error.message);
     return null;
   }
   return session;
@@ -56,7 +56,7 @@ export const getFeedbackCounts = async () => {
 
     return { likes, dislikes };
   } catch (error) {
-    console.error('Error getting feedback counts:', error.message);
+    // console.error('Error getting feedback counts:', error.message);
     return { likes: 0, dislikes: 0 };
   }
 };
@@ -72,7 +72,7 @@ export const getUserVote = async (userId) => {
     if (error) throw error;
     return data?.vote_type || null;
   } catch (error) {
-    console.error('Error getting user vote:', error.message);
+    // console.error('Error getting user vote:', error.message);
     return null;
   }
 };
@@ -116,7 +116,7 @@ export const submitFeedback = async (voteType, userId) => {
       return { action: 'added' };
     }
   } catch (error) {
-    console.error('Error submitting feedback:', error.message);
+    // console.error('Error submitting feedback:', error.message);
     throw error;
   }
 };

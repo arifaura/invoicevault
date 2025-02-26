@@ -108,7 +108,7 @@ const Invoices = () => {
   const fetchInvoices = async () => {
     setLoading(true);
     try {
-      console.log('Fetching invoices...');
+      // console.log('Fetching invoices...');
       const { data, error } = await supabase
         .from('invoices')
         .select(`
@@ -118,29 +118,29 @@ const Invoices = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Supabase query error:', error);
+        // console.error('Supabase query error:', error);
         throw error;
       }
 
-      console.log('Raw database response:', data);
+      // console.log('Raw database response:', data);
       
-      if (Array.isArray(data)) {
-        console.log('Number of invoices:', data.length);
-        data.forEach(invoice => {
-          console.log('Invoice details:', {
-            id: invoice.id,
-            title: invoice.title,
-            status: invoice.status,
-            vendor: invoice.vendor
-          });
-        });
-      } else {
-        console.log('Data is not an array:', typeof data);
-      }
+      // if (Array.isArray(data)) {
+      //   // console.log('Number of invoices:', data.length);
+      //   data.forEach(invoice => {
+      //     console.log('Invoice details:', {
+      //       id: invoice.id,
+      //       title: invoice.title,
+      //       status: invoice.status,
+      //       vendor: invoice.vendor
+      //     });
+      //   });
+      // } else {
+        // console.log('Data is not an array:', typeof data);
+      // }
 
       setInvoices(data);
     } catch (error) {
-      console.error('Error fetching invoices:', error);
+      // console.error('Error fetching invoices:', error);
       toast.error('Failed to load invoices');
     } finally {
       setLoading(false);
@@ -221,7 +221,7 @@ const Invoices = () => {
       // Close the alert
       setDeleteAlert({ show: false, invoice: null });
     } catch (error) {
-      console.error('Error deleting invoice:', error);
+      // console.error('Error deleting invoice:', error);
       toast.error('Failed to delete invoice: ' + error.message, { id: 'deleteInvoice' });
     }
   };
@@ -251,7 +251,7 @@ const Invoices = () => {
         icon: '📥'
       });
     } catch (error) {
-      console.error('Error downloading invoice:', error);
+      // console.error('Error downloading invoice:', error);
       toast.error('Failed to download invoice. Please try again.', {
         duration: 4000,
         icon: '❌'
@@ -463,7 +463,7 @@ const Invoices = () => {
         icon: '✅'
       });
     } catch (error) {
-      console.error('Error deleting invoices:', error);
+      // console.error('Error deleting invoices:', error);
       toast.error('Failed to delete invoices. Please try again.', {
         duration: 4000,
         icon: '❌'
