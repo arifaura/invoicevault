@@ -442,7 +442,7 @@
     display: inline-flex;
     align-items: center;
     padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
+    border-radius: 1rem;
     font-size: 0.75rem;
     font-weight: 500;
 }
@@ -822,4 +822,32 @@
 .checkbox:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.warranty-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-align: center;
+    min-width: 100px;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.warranty-status.red {
+    background-color: #b91c1c !important; /* Tailwind red-700 */
+    color: #fff !important;
+}
+
+.warranty-status.yellow {
+    background-color: #fde047 !important; /* Tailwind yellow-300 */
+    color: #1a202c !important; /* Tailwind gray-900 */
+}
+
+.warranty-status.green {
+    background-color: #166534 !important; /* Tailwind green-800 */
+    color: #fff !important;
 } 

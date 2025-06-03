@@ -10,6 +10,7 @@ import { toast } from 'react-hot-toast';
 import { supabase } from '../../utils/supabaseClient';
 import { RiFileListLine } from 'react-icons/ri';
 import Skeleton from '../Common/Skeleton';
+import * as XLSX from 'xlsx';
 
 const InvoiceSkeleton = () => (
   <div className="invoice-item skeleton-wrapper">
@@ -291,32 +292,25 @@ const Invoices = () => {
 
   const handleExport = () => {
     const selectedData = invoices.filter(invoice => selectedInvoices.includes(invoice.id));
-    const csvData = selectedData.map(invoice => ({
+    if (selectedData.length === 0) return;
+
+    const excelData = selectedData.map(invoice => ({
       'Invoice No': invoice.id,
       'Title': invoice.title,
-      'Vendor': invoice.vendor.name,
+      'Vendor': invoice.vendor?.name,
       'Amount': invoice.amount,
-      'Date': invoice.purchaseDate,
-      'Payment Mode': invoice.paymentMode,
+      'Date': invoice.purchase_date,
+      'Payment Mode': invoice.payment_mode,
       'Category': invoice.category,
       'Status': invoice.status,
-      'Warranty': invoice.warrantyPeriod || 'N/A'
+      'Warranty': invoice.warranty_period || 'N/A'
     }));
 
-    const headers = Object.keys(csvData[0]);
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => headers.map(header => `"${row[header]}"`).join(','))
-    ].join('\n');
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Invoices');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `invoices_export_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    XLSX.writeFile(workbook, `invoices_export_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   // Filter invoices based on search and filters
@@ -380,11 +374,9 @@ const Invoices = () => {
   };
 
   const getWarrantyStatusClass = (daysLeft) => {
-    if (daysLeft === null) return 'na';
-    if (daysLeft <= 0) return 'expired';
-    if (daysLeft <= 30) return 'critical';
-    if (daysLeft <= 90) return 'warning';
-    return 'good';
+    if (daysLeft === null || daysLeft <= 30) return 'red';
+    if (daysLeft <= 730) return 'yellow'; // 2 years = 730 days
+    return 'green';
   };
 
   // Warranty expiration check
@@ -706,7 +698,7 @@ const Invoices = () => {
                         }) : 'N/A'}</td>
                         <td>{invoice?.warranty_period || 'N/A'}</td>
                         <td>
-                          <span className={`warranty-days ${warrantyStatusClass}`}>
+                          <span className={`warranty-status ${getWarrantyStatusClass(daysLeft)}`}>
                             {daysLeft !== null 
                               ? daysLeft <= 0 
                                 ? 'Expired'

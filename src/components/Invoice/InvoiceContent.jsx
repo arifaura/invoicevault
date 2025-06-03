@@ -12,6 +12,7 @@ import {
   FiBox,
   FiShield,
   FiFileText,
+  FiAlertCircle,
 } from "react-icons/fi";
 
 const InvoiceContent = ({ invoice, contentRef }) => {
@@ -33,7 +34,29 @@ const InvoiceContent = ({ invoice, contentRef }) => {
       .getPublicUrl(imageUrl).data.publicUrl;
   };
 
+  // Calculate days left in warranty
+  const calculateDaysLeft = () => {
+    if (!invoice?.purchase_date || !invoice?.warranty_period) return null;
+    
+    const purchaseDate = new Date(invoice.purchase_date);
+    const warrantyEndDate = new Date(purchaseDate);
+    warrantyEndDate.setDate(purchaseDate.getDate() + parseInt(invoice.warranty_period));
+    
+    const today = new Date();
+    const daysLeft = Math.ceil((warrantyEndDate - today) / (1000 * 60 * 60 * 24));
+    return daysLeft;
+  };
+
+  // Get warranty status color
+  const getWarrantyStatusColor = (daysLeft) => {
+    if (daysLeft === null || daysLeft <= 30) return "red";
+    if (daysLeft <= 730) return "yellow"; // 2 years = 730 days
+    return "green";
+  };
+
   const isPDF = invoice?.image_url?.toLowerCase().endsWith('.pdf');
+  const daysLeft = calculateDaysLeft();
+  const warrantyStatusColor = getWarrantyStatusColor(daysLeft);
 
   return (
     <div className="invoice-content modern" ref={contentRef}>
@@ -171,6 +194,18 @@ const InvoiceContent = ({ invoice, contentRef }) => {
               <div className="detail-content">
                 <label>Warranty Period</label>
                 <span>{invoice?.warranty_period || "N/A"}</span>
+              </div>
+            </div>
+
+            <div className="detail-item">
+              <div className="detail-icon">
+                <FiAlertCircle />
+              </div>
+              <div className="detail-content">
+                <label>Days Left</label>
+                <span className={`warranty-status ${warrantyStatusColor}`}>
+                  {daysLeft !== null ? `${daysLeft} days` : "N/A"}
+                </span>
               </div>
             </div>
 
