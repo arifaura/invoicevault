@@ -5,9 +5,11 @@ import './CreateInvoiceModal.css';
 import { supabase } from '../../utils/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
+import { useNotifications } from '../../context/NotificationContext';
 
 const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
   const { user } = useAuth();
+  const { addNotification } = useNotifications();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -193,6 +195,11 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
           duration: 4000,
           icon: '✅'
         });
+        addNotification({
+          type: 'success',
+          message: `Invoice "${formData.title}" updated successfully`,
+          icon: <RiFileListLine size={16} />
+        });
       } else {
         // Create new invoice
         const { error } = await supabase
@@ -208,6 +215,11 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
         toast.success('Invoice created successfully! 🎉', {
           duration: 4000,
           icon: '✅'
+        });
+        addNotification({
+          type: 'success',
+          message: `Invoice "${formData.title}" created successfully`,
+          icon: <RiFileListLine size={16} />
         });
 
         // Reset form data after successful creation
@@ -236,6 +248,11 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
       toast.error(error.message || 'Failed to save invoice', {
         duration: 4000,
         icon: '❌'
+      });
+      addNotification({
+        type: 'error',
+        message: error.message || 'Failed to save invoice',
+        icon: <FiX size={16} />
       });
     } finally {
       setLoading(false);
