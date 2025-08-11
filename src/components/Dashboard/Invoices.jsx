@@ -218,6 +218,11 @@ const Invoices = () => {
       setInvoices(prev => prev.filter(inv => inv.id !== invoice.id));
       
       toast.success('Invoice deleted successfully!', { id: 'deleteInvoice' });
+      addNotification({
+        type: 'success',
+        message: `Invoice ${invoice.id} deleted successfully`,
+        icon: <FiTrash2 size={16} />
+      });
       
       // Close the alert
       setDeleteAlert({ show: false, invoice: null });

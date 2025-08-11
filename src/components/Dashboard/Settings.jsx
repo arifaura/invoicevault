@@ -5,11 +5,13 @@ import { supabase } from '../../utils/supabaseClient';
 import { toast } from 'react-hot-toast';
 import { useProfile } from '../../context/ProfileContext';
 import './Settings.css';
+import { useNotifications } from '../../context/NotificationContext';
 
 
 const Settings = () => {
   const { user } = useAuth();
   const { profile, setProfile } = useProfile();
+  const { addNotification } = useNotifications();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
 
@@ -130,6 +132,11 @@ const Settings = () => {
       handleInputChange('avatar', publicUrl);
       
       toast.success('Profile picture updated successfully!');
+      addNotification({
+        type: 'success',
+        message: 'Profile picture updated',
+        icon: <FiCamera size={16} />
+      });
     } catch (error) {
       // console.error('Error uploading avatar:', error);
       toast.error(error.message || 'Failed to upload profile picture');
@@ -157,6 +164,11 @@ const Settings = () => {
       if (error) throw error;
 
       toast.success('Profile updated successfully!');
+      addNotification({
+        type: 'success',
+        message: 'Profile updated successfully',
+        icon: <FiSave size={16} />
+      });
     } catch (error) {
       // console.error('Error updating profile:', error);
       toast.error(error.message || 'Failed to update profile');
@@ -190,6 +202,11 @@ const Settings = () => {
       });
 
       toast.success('Password updated successfully!');
+      addNotification({
+        type: 'success',
+        message: 'Password updated successfully',
+        icon: <FiLock size={16} />
+      });
     } catch (error) {
       // console.error('Error updating password:', error);
       toast.error(error.message || 'Failed to update password');
