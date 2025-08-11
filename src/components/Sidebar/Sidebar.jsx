@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FiHome, FiFileText, FiSettings, FiUsers, FiStar } from 'react-icons/fi';
+import { FiHome, FiFileText, FiSettings, FiUsers, FiStar, FiCheckSquare } from 'react-icons/fi';
 import { useUpgrade } from '../../context/UpgradeContext';
 import './Sidebar.css';
 
@@ -27,9 +27,10 @@ const Sidebar = () => {
 
   const menuItems = [
     { path: '/dashboard', icon: <FiHome size={20} />, label: 'Dashboard' },
-    { path: '/invoices', icon: <FiFileText size={20} />, label: 'Invoices' },
-    { path: '/clients', icon: <FiUsers size={20} />, label: 'Clients' },
-    { path: '/settings', icon: <FiSettings size={20} />, label: 'Settings' },
+    { path: '/dashboard/invoices', icon: <FiFileText size={20} />, label: 'Invoices' },
+    { path: '/dashboard/customers', icon: <FiUsers size={20} />, label: 'Clients' },
+    { path: '/dashboard/todo', icon: <FiCheckSquare size={20} />, label: 'Tasks' },
+    { path: '/dashboard/settings', icon: <FiSettings size={20} />, label: 'Settings' },
   ];
 
   return (

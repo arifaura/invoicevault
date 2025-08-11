@@ -22,6 +22,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import Home from './components/Home/Home'; // Import the Home component
 import ResetPassword from './components/Auth/ResetPassword';
+import KanbanBoard from './components/Kanban/KanbanBoard';
 
 function App() {
   return (
@@ -70,6 +71,8 @@ function App() {
                     <Route index element={<Overview />} />
                     <Route path="invoices" element={<Invoices />} />
                     <Route path="invoice/:id" element={<InvoiceView />} />
+                    <Route path="todo" element={<KanbanBoard />} />
+                    <Route path="tasks" element={<KanbanBoard />} />
                     <Route path="settings" element={<Settings />} />
                   </Route>
 

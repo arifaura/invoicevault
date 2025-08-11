@@ -21,6 +21,13 @@ export const ThemeProvider = ({ children }) => {
     // Save theme preference
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
     
+    // Apply theme to document element for Tailwind dark mode
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    
     // Apply theme to document element
     document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
     

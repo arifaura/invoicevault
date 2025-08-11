@@ -8,6 +8,7 @@ import Overview from './components/Dashboard/Overview';
 import Invoices from './components/Dashboard/Invoices';
 import Customers from './components/Dashboard/Customers';
 import Settings from './components/Dashboard/Settings';
+import KanbanBoard from './components/Kanban/KanbanBoard';
 import NotFound from './components/NotFound/NotFound';
 import PublicRoute from './components/PublicRoute';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -22,6 +23,8 @@ const AppRoutes = () => {
         <Route index element={<Overview />} />
         <Route path="invoices" element={<Invoices />} />
         <Route path="customers" element={<Customers />} />
+        <Route path="todo" element={<KanbanBoard />} />
+        <Route path="tasks" element={<KanbanBoard />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<NotFound />} />

@@ -6,8 +6,7 @@ import {
   RiUserLine,
   RiSettings4Line 
 } from 'react-icons/ri';
-import { HiOutlineDocumentReport } from 'react-icons/hi';
-import { BiAnalyse } from 'react-icons/bi';
+import { HiOutlineClipboardCheck } from 'react-icons/hi';
 import './Sidebar.css';
 import { useUpgrade } from '../../context/UpgradeContext';
 
@@ -24,6 +23,11 @@ const Sidebar = ({ isOpen }) => {
       path: '/dashboard/invoices',
       name: 'Invoices',
       icon: <RiFileList2Line size={20} />
+    },
+    {
+      path: '/dashboard/todo',
+      name: 'Todo',
+      icon: <HiOutlineClipboardCheck size={20} />
     },
     {
       path: '/dashboard/settings',
