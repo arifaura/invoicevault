@@ -153,7 +153,7 @@ const SortableTaskCard = ({ task, onEdit, onDelete }) => {
       style={style} 
       {...attributes} 
       {...listeners}
-      className="touch-none"
+      className="select-none touch-pan-y md:touch-none"
     >
       <TaskCard task={task} isDragging={isDragging} onEdit={onEdit} onDelete={onDelete} />
     </div>
@@ -166,7 +166,7 @@ const DroppableColumn = ({ id, title, items, isDarkMode, children }) => {
   return (
     <div
       ref={setNodeRef}
-      className={`min-w-[300px] max-w-[360px] p-4 rounded-xl border transition-all duration-200
+      className={`snap-start min-w-[260px] sm:min-w-[300px] max-w-[360px] p-4 rounded-xl border transition-all duration-200
         ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50/50 border-gray-200'}
         ${isOver ? (isDarkMode ? 'ring-2 ring-blue-500/40 bg-gray-800/70' : 'ring-2 ring-blue-400/40 bg-gray-50/70') : ''}
         shadow-sm hover:shadow-md`}
@@ -216,7 +216,7 @@ const TaskModal = ({ isOpen, onClose, onSave, initialData, isDarkMode }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className={`relative w-full max-w-md rounded-xl p-6 shadow-lg ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
+      <div className={`relative w-full max-w-md mx-4 rounded-xl p-6 shadow-lg ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
         <h3 className="text-xl font-semibold mb-4">{initialData ? 'Edit Task' : 'Add Task'}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -267,7 +267,7 @@ const TaskModal = ({ isOpen, onClose, onSave, initialData, isDarkMode }) => {
 
         <div className="mt-6 flex justify-end gap-3">
           <button 
-            className={`px-4 py-2 rounded-md ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`} 
+            className={`${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} px-4 py-2 rounded-md`} 
             onClick={onClose}
           >
             Cancel
@@ -304,7 +304,9 @@ const KanbanBoard = () => {
   }, [tasks]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -419,18 +421,18 @@ const KanbanBoard = () => {
   const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
 
   return (
-    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'} min-h-screen p-6 transition-colors duration-200`}>
+    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'} min-h-screen p-4 md:p-6 transition-colors duration-200`}>
       <div className="max-w-7xl mx-auto">
         {/* KPI Dashboard */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
             <div>
               <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Task Management Board</h1>
               <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mt-1`}>Drag tasks between columns to update status</p>
             </div>
             <button 
               onClick={openAddModal} 
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors"
+              className="w-full sm:w-auto inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors"
             >
               <FiPlus size={16} /> Add Task
             </button>
@@ -475,7 +477,7 @@ const KanbanBoard = () => {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+          <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 md:mx-0 px-4 snap-x snap-mandatory">
             {/* All */}
             <DroppableColumn id="all" title="All" items={tasksByStatus.all} isDarkMode={isDarkMode}>
               <SortableContext items={tasksByStatus.all.map(t => t.id)} strategy={verticalListSortingStrategy}>
