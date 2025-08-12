@@ -101,6 +101,8 @@ const Invoices = () => {
   const [bulkDeleteAlert, setBulkDeleteAlert] = useState(false);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchInvoices();
@@ -155,7 +157,7 @@ const Invoices = () => {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      const validInvoiceIds = filteredInvoices
+      const validInvoiceIds = paginatedInvoices
         .filter(invoice => invoice?.id)
         .map(invoice => invoice.id);
       setSelectedInvoices(validInvoiceIds);
@@ -350,6 +352,22 @@ const Invoices = () => {
       return true;
     });
   }, [invoices, searchQuery, filters]);
+
+  // Reset to first page whenever filters/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filters]);
+
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredInvoices.length / itemsPerPage));
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedInvoices = filteredInvoices.slice(startIndex, endIndex);
 
   const calculateWarrantyDaysLeft = (purchaseDate, warrantyPeriod) => {
     if (!warrantyPeriod || warrantyPeriod === 'N/A') return null;
@@ -639,7 +657,10 @@ const Invoices = () => {
                     <input
                       type="checkbox"
                       onChange={handleSelectAll}
-                      checked={selectedInvoices.length > 0 && selectedInvoices.length === filteredInvoices.length}
+                      checked={
+                        paginatedInvoices.length > 0 &&
+                        paginatedInvoices.every(inv => inv?.id && selectedInvoices.includes(inv.id))
+                      }
                       className="checkbox"
                       disabled={loading}
                     />
@@ -669,7 +690,7 @@ const Invoices = () => {
                     <TableRowSkeleton />
                   </>
                 ) : (
-                  filteredInvoices.map((invoice, index) => {
+                  paginatedInvoices.map((invoice, index) => {
                     const daysLeft = calculateWarrantyDaysLeft(invoice?.purchase_date, invoice?.warranty_period);
                     const warrantyStatusClass = getWarrantyStatusClass(daysLeft);
                     
@@ -683,7 +704,7 @@ const Invoices = () => {
                             className="checkbox"
                           />
                         </td>
-                        <td className="serial-number">{index + 1}</td>
+                        <td className="serial-number">{startIndex + index + 1}</td>
                         <td className="invoice-title">
                           <div className="text-truncate">{invoice?.title || 'N/A'}</div>
                         </td>
@@ -755,15 +776,15 @@ const Invoices = () => {
 
       <div className="table-footer">
         <div className="per-page-select">
-          <select defaultValue="10">
+          <select value={itemsPerPage} onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
             <option value="10">10 per page</option>
             <option value="20">20 per page</option>
             <option value="50">50 per page</option>
           </select>
         </div>
         <div className="pagination">
-          <button className="pagination-btn" disabled>Previous</button>
-          <button className="pagination-btn">Next</button>
+          <button className="pagination-btn" disabled={loading || currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>Previous</button>
+          <button className="pagination-btn" disabled={loading || currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>Next</button>
         </div>
       </div>
 
