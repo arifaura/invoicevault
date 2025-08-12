@@ -1,536 +1,658 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from '../../context/ThemeContext';
-import {
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  useDroppable,
-  DragOverlay,
-  pointerWithin,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import confetti from 'canvas-confetti';
-import { FiEdit2, FiTrash2, FiPlus, FiClock, FiPlay, FiCheckCircle, FiList } from 'react-icons/fi';
+import CustomAlert from '../Common/CustomAlert';
 
-// --- Demo seed tasks ---
-const seedTasks = [
-  { id: '1', title: 'Design new logo', description: 'Create a modern logo for the company rebrand', status: 'pending', priority: 'high', createdAt: Date.now() - 100000 },
-  { id: '2', title: 'Update website content', description: 'Refresh all product pages with Q4 copy', status: 'ongoing', priority: 'medium', createdAt: Date.now() - 90000 },
-  { id: '3', title: 'Prepare quarterly report', description: 'Compile data and create Q4 financial report', status: 'completed', priority: 'high', createdAt: Date.now() - 80000 },
-  { id: '4', title: 'Client meeting preparation', description: 'Slides and materials for Monday meeting', status: 'pending', priority: 'medium', createdAt: Date.now() - 70000 },
-  { id: '5', title: 'Code review', description: 'Review pull requests and provide feedback', status: 'ongoing', priority: 'low', createdAt: Date.now() - 60000 },
-];
+// Modern Todo — React component that can be previewed in the canvas
+// This file replaces the previous full-HTML demo (which caused a parsing error
+// in the code/react preview because it started with `<!doctype html>`).
 
-const STORAGE_KEY = 'kanbanTasks';
+function uid() {
+  return Math.random().toString(36).slice(2, 9);
+}
 
-// --- KPI Cards ---
-const KPICard = ({ title, value, icon: Icon, color, isDarkMode }) => (
-  <div className={`p-4 rounded-xl border transition-all duration-200 hover:shadow-lg ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/50 border-gray-200'}`}>
-    <div className="flex items-center justify-between">
-      <div>
-        <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{title}</p>
-        <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{value}</p>
-      </div>
-      <div className={`p-3 rounded-lg ${color}`}>
-        <Icon size={24} className="text-white" />
-      </div>
-    </div>
-  </div>
-);
-
-// --- Task Card ---
-const TaskCard = ({ task, isDragging, onEdit, onDelete, isOverlay = false }) => {
+export default function ModernTodo() {
   const { isDarkMode } = useTheme();
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'ongoing':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+  
+  const [tasks, setTasks] = useState(() => {
+    try {
+      const raw = localStorage.getItem("modern-todo.tasks");
+      return raw ? JSON.parse(raw) : [
+        { id: uid(), title: "Design beautiful UI", description: "Create a modern and responsive design", priority: "high", status: "pending", done: false },
+        { id: uid(), title: "Add drag & drop reorder", description: "Implement drag and drop functionality", priority: "medium", status: "pending", done: false },
+        { id: uid(), title: "Celebrate with confetti on complete", description: "Add confetti animation when tasks are completed", priority: "low", status: "pending", done: false }
+      ];
+    } catch (e) {
+      return [];
     }
+  });
+
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    priority: "medium",
+    status: "pending"
+  });
+
+  // Alert states
+  const [deleteAlert, setDeleteAlert] = useState({ show: false, taskId: null });
+  const [clearAllAlert, setClearAllAlert] = useState(false);
+  const [editAlert, setEditAlert] = useState({ show: false, task: null, title: "", description: "" });
+  
+  const dragItem = useRef(null);
+  const dragNode = useRef(null);
+  const confettiRootRef = useRef(null);
+
+  // persist tasks
+  useEffect(() => {
+    try {
+      localStorage.setItem("modern-todo.tasks", JSON.stringify(tasks));
+    } catch (e) {}
+  }, [tasks]);
+
+  // Simple DOM-based confetti (no external deps) — creates colorful falling particles
+  function runConfetti(count = 80) {
+    const root = confettiRootRef.current;
+    if (!root) return;
+    const colors = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#06b6d4"];
+    const fragments = [];
+
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement("div");
+      const size = Math.round(6 + Math.random() * 10);
+      const left = Math.round(Math.random() * 100);
+      const delay = (Math.random() * 0.6).toFixed(2);
+      const rotation = Math.round(Math.random() * 360);
+      el.style.position = "absolute";
+      el.style.left = `${left}%`;
+      el.style.top = `-10px`;
+      el.style.width = `${size}px`;
+      el.style.height = `${size * 0.6}px`;
+      el.style.background = colors[Math.floor(Math.random() * colors.length)];
+      el.style.opacity = "0.95";
+      el.style.borderRadius = "3px";
+      el.style.transform = `rotate(${rotation}deg)`;
+      el.style.pointerEvents = "none";
+      el.style.zIndex = 9999;
+      el.style.willChange = "transform, top, opacity";
+      el.style.animation = `confettiFall ${2 + Math.random() * 1.2}s ${delay}s linear forwards`;
+
+      root.appendChild(el);
+      fragments.push(el);
+    }
+
+    // cleanup after animation finishes
+    setTimeout(() => {
+      fragments.forEach((f) => f.remove());
+    }, 3500);
+  }
+
+  function addTask(e) {
+    e.preventDefault();
+    const title = formData.title.trim();
+    const description = formData.description.trim();
+    if (!title) return;
+    
+    const newTask = {
+      id: uid(),
+      title,
+      description,
+      priority: formData.priority,
+      status: formData.status,
+      done: false
+    };
+    
+    setTasks((t) => [newTask, ...t]);
+    setFormData({
+      title: "",
+      description: "",
+      priority: "medium",
+      status: "pending"
+    });
+  }
+
+  function toggleDone(id) {
+    setTasks((old) => {
+      const next = old.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+      const toggled = next.find((x) => x.id === id);
+      // run confetti if it has been marked done
+      if (toggled && toggled.done) runConfetti(120);
+      return next;
+    });
+  }
+
+  function removeTask(id) {
+    setTasks((old) => old.filter((t) => t.id !== id));
+  }
+
+  function editTask(id) {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+    
+    setEditAlert({
+      show: true,
+      task,
+      title: task.title,
+      description: task.description
+    });
+  }
+
+  const handleEditConfirm = () => {
+    const { task, title, description } = editAlert;
+    if (title.trim() === "") return;
+    
+    setTasks((old) => old.map((t) => (t.id === task.id ? { 
+      ...t, 
+      title: title.trim(), 
+      description: description.trim(),
+      priority: task.priority,
+      status: task.status
+    } : t)));
+    setEditAlert({ show: false, task: null, title: "", description: "" });
   };
+
+  const handleDeleteConfirm = () => {
+    removeTask(deleteAlert.taskId);
+    setDeleteAlert({ show: false, taskId: null });
+  };
+
+  const handleClearAllConfirm = () => {
+    setTasks([]);
+    setClearAllAlert(false);
+  };
+
+  function handleDragStart(e, index) {
+    dragItem.current = index;
+    dragNode.current = e.currentTarget;
+    dragNode.current.classList.add("dragging");
+    try {
+      e.dataTransfer.setData("text/plain", "drag");
+      e.dataTransfer.effectAllowed = "move";
+    } catch (err) {}
+  }
+
+  function handleDragEnter(e, index) {
+    e.preventDefault();
+    if (!dragNode.current || dragNode.current === e.currentTarget) return;
+    setTasks((old) => {
+      const list = [...old];
+      const draggedItem = list.splice(dragItem.current, 1)[0];
+      list.splice(index, 0, draggedItem);
+      dragItem.current = index;
+      return list;
+    });
+  }
+
+  function handleDragEnd() {
+    if (dragNode.current) dragNode.current.classList.remove("dragging");
+    dragItem.current = null;
+    dragNode.current = null;
+  }
+
+  function markAllDone() {
+    setTasks((old) => {
+      const next = old.map((t) => ({ ...t, done: true }));
+      // celebrate once
+      runConfetti(140);
+      return next;
+    });
+  }
+
+  function clearAll() {
+    setClearAllAlert(true);
+  }
+
+  const remaining = tasks.filter((t) => !t.done).length;
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'medium':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-      case 'low':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      case 'high': return '#ef4444';
+      case 'medium': return '#f59e0b';
+      case 'low': return '#10b981';
+      default: return '#6b7280';
     }
   };
 
-  const handleEditClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onEdit(task);
-  };
-
-  const handleDeleteClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onDelete(task.id);
-  };
-
-  return (
-    <div
-      className={`p-4 mb-3 rounded-lg border transition-all duration-200 cursor-move
-        ${isDarkMode ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}
-        ${isDragging ? 'opacity-50 rotate-2' : ''}
-        ${isOverlay ? 'shadow-2xl scale-105' : 'shadow-sm hover:shadow-md'}
-        transform-gpu`}
-    >
-      <div className="flex items-start justify-between mb-2">
-        <h3 className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{task.title}</h3>
-        {!isOverlay && (
-          <div className="flex items-center gap-2">
-            <button 
-              type="button"
-              aria-label="Edit" 
-              className={`p-2 rounded hover:opacity-80 transition-all duration-200 ${isDarkMode ? 'text-gray-300 hover:bg-gray-700 hover:text-white' : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'}`} 
-              onClick={handleEditClick}
-            >
-              <FiEdit2 size={16} />
-            </button>
-            <button 
-              type="button"
-              aria-label="Delete" 
-              className={`p-2 rounded hover:opacity-80 transition-all duration-200 ${isDarkMode ? 'text-gray-300 hover:bg-gray-700 hover:text-red-400' : 'text-gray-600 hover:bg-gray-200 hover:text-red-600'}`} 
-              onClick={handleDeleteClick}
-            >
-              <FiTrash2 size={16} />
-            </button>
-          </div>
-        )}
-      </div>
-      <p className={`text-xs mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{task.description}</p>
-      <div className="flex gap-2">
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
-          {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-        </span>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
-          {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-        </span>
-      </div>
-    </div>
-  );
-};
-
-const SortableTaskCard = ({ task, onEdit, onDelete }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
-    id: task.id,
-    transition: {
-      duration: 200,
-      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
-    },
-  });
-  
-  const style = { 
-    transform: CSS.Transform.toString(transform), 
-    transition: transition || 'transform 200ms ease',
-  };
-  
-  return (
-    <div 
-      ref={setNodeRef} 
-      style={style} 
-      {...attributes} 
-      {...listeners}
-      className="select-none touch-pan-y md:touch-none"
-    >
-      <TaskCard task={task} isDragging={isDragging} onEdit={onEdit} onDelete={onDelete} />
-    </div>
-  );
-};
-
-// --- Column ---
-const DroppableColumn = ({ id, title, items, isDarkMode, children }) => {
-  const { setNodeRef, isOver } = useDroppable({ id });
-  return (
-    <div
-      ref={setNodeRef}
-      className={`snap-start min-w-[260px] sm:min-w-[300px] max-w-[360px] p-4 rounded-xl border transition-all duration-200
-        ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50/50 border-gray-200'}
-        ${isOver ? (isDarkMode ? 'ring-2 ring-blue-500/40 bg-gray-800/70' : 'ring-2 ring-blue-400/40 bg-gray-50/70') : ''}
-        shadow-sm hover:shadow-md`}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <h2 className={`font-semibold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{title}</h2>
-        <span className={`${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'} px-3 py-1 rounded-full text-sm font-medium`}>
-          {items.length}
-        </span>
-      </div>
-      <div className="space-y-3 min-h-[200px]">
-        {children}
-      </div>
-    </div>
-  );
-};
-
-// --- Modal ---
-const TaskModal = ({ isOpen, onClose, onSave, initialData, isDarkMode }) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState('medium');
-  const [status, setStatus] = useState('pending');
-
-  useEffect(() => {
-    if (initialData) {
-      setTitle(initialData.title || '');
-      setDescription(initialData.description || '');
-      setPriority(initialData.priority || 'medium');
-      setStatus(initialData.status || 'pending');
-    } else {
-      setTitle('');
-      setDescription('');
-      setPriority('medium');
-      setStatus('pending');
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return '#f59e0b';
+      case 'in-progress': return '#3b82f6';
+      case 'completed': return '#10b981';
+      default: return '#6b7280';
     }
-  }, [initialData, isOpen]);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-    onSave({ title: title.trim(), description: description.trim(), priority, status });
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className={`relative w-full max-w-md mx-4 rounded-xl p-6 shadow-lg ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
-        <h3 className="text-xl font-semibold mb-4">{initialData ? 'Edit Task' : 'Add Task'}</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm block mb-1">Title *</label>
-            <input 
-              className={`w-full rounded-md border px-3 py-2 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300'}`} 
-              value={title} 
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
+    <div style={{ 
+      padding: 20, 
+      fontFamily: "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial", 
+      minHeight: '100vh', 
+      background: isDarkMode ? 'linear-gradient(180deg,#07102a 0%, #071b2f 60%)' : 'linear-gradient(180deg,#f8fafc 0%, #e2e8f0 60%)', 
+      color: isDarkMode ? '#e6eef8' : '#1e293b' 
+    }}>
+
+      {/* styles scoped into component to keep single-file preview friendly */}
+      <style>{`
+        .app{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 360px;gap:24px;align-items:start}
+        @media(max-width:920px){.app{grid-template-columns:1fr;padding-bottom:40px}}
+        .panel{background:${isDarkMode ? 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))' : 'linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6))'};border-radius:12px;padding:18px;box-shadow:0 6px 30px ${isDarkMode ? 'rgba(2,6,23,0.6)' : 'rgba(0,0,0,0.1)'};border:1px solid ${isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.1)'}}
+        .header{display:flex;align-items:center;justify-content:center;margin-bottom:12px;position:relative;min-height:80px;padding-right:100px}
+        .logo{display:flex;gap:12px;align-items:center;padding:16px 20px;border-radius:12px;background:${isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.95)'};border:2px solid ${isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'};box-shadow:0 6px 25px ${isDarkMode ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.15)'},0 0 0 1px ${isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}}
+        .mark{width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#2dd4bf);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;box-shadow:0 6px 20px rgba(124,58,237,0.18)}
+        h1{margin:0;font-size:26px;font-weight:900;color:${isDarkMode ? '#ffffff' : '#1e293b'};text-shadow:0 3px 6px ${isDarkMode ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0.5)'},0 0 30px ${isDarkMode ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.2)'};filter:drop-shadow(0 3px 6px ${isDarkMode ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0.5)'});letter-spacing:1.5px;-webkit-text-stroke:${isDarkMode ? '2px rgba(0,0,0,1)' : '1px rgba(0,0,0,0.5)'};background:${isDarkMode ? 'linear-gradient(45deg, #ffffff, #f0f9ff)' : 'linear-gradient(45deg, #1e293b, #334155)'};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .lead{margin:0;color:${isDarkMode ? '#9aa4b2' : '#64748b'};font-size:13px;font-weight:500}
+        .task-count{position:absolute;right:20px;top:50%;transform:translateY(-50%);background:${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'};padding:6px 10px;border-radius:6px;border:1px solid ${isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'};max-width:70px;overflow:hidden;white-space:nowrap;font-size:12px}
+        .addRow{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+        .form-row{display:flex;gap:10px}
+        .input{flex:1;padding:10px 14px;border-radius:10px;background:transparent;border:1px solid ${isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.1)'};outline:none;color:${isDarkMode ? '#e6eef8' : '#1e293b'};transition:transform .15s ease, box-shadow .15s ease;font-weight:500}
+        .input:focus{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,0.12);border-color: rgba(124,58,237,0.9)}
+        .select{flex:1;padding:10px 14px;border-radius:10px;background:transparent;border:1px solid ${isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.1)'};outline:none;color:${isDarkMode ? '#e6eef8' : '#1e293b'};cursor:pointer;font-weight:500}
+        .btn{padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,#7c3aed,#06b6d4);border:none;color:white;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(124,58,237,0.18)}
+        .list{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+        .task{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:${isDarkMode ? 'linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.015))' : 'linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6))'};border:1px solid ${isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.1)'};transition:transform .18s cubic-bezier(.2,.9,.3,1),box-shadow .18s ease,opacity .18s ease}
+        .task.dragging{transform:scale(1.02) translateX(6px);box-shadow:0 10px 40px ${isDarkMode ? 'rgba(2,6,23,0.6)' : 'rgba(0,0,0,0.2)'};opacity:0.98}
+        .handle{width:36px;height:36px;border-radius:8px;background:${isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.05)'};display:flex;align-items:center;justify-content:center;cursor:grab}
+        .title{flex:1;display:flex;flex-direction:column}
+        .title strong{font-size:15px;font-weight:600;color:${isDarkMode ? '#e6eef8' : '#1e293b'}}
+        .title small{color:${isDarkMode ? '#9aa4b2' : '#64748b'};font-size:12px;font-weight:500}
+        .priority-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;text-transform:uppercase;margin-left:8px}
+        .status-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;text-transform:uppercase;margin-left:8px}
+        .actions{display:flex;gap:8px;align-items:center}
+        .icon-btn{width:36px;height:36px;border-radius:8px;background:transparent;border:1px solid ${isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.1)'};display:flex;align-items:center;justify-content:center;cursor:pointer;color:${isDarkMode ? '#e6eef8' : '#1e293b'}}
+        .icon-btn:hover{background:${isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}}
+        .completed{opacity:0.6;text-decoration:line-through}
+        .empty{padding:28px;border-radius:12px;border:1px dashed ${isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.1)'};color:${isDarkMode ? '#9aa4b2' : '#64748b'};text-align:center;font-weight:500}
+        .sidebar h3{margin:0;font-size:14px;font-weight:600;color:${isDarkMode ? '#e6eef8' : '#1e293b'}}
+        .sidebar h4{margin:0;font-size:13px;font-weight:600;color:${isDarkMode ? '#e6eef8' : '#1e293b'}}
+        .stats{display:flex;gap:8px;margin-top:12px}
+        .stat{background:${isDarkMode ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.05)'};padding:10px;border-radius:10px;flex:1;text-align:center}
+        .stat div:first-child{font-weight:700;color:${isDarkMode ? '#e6eef8' : '#1e293b'}}
+        .stat div:last-child{font-weight:500;color:${isDarkMode ? '#9aa4b2' : '#64748b'}}
+
+        /* confetti animation */
+        @keyframes confettiFall {
+          0% { transform: translateY(-10px) rotate(0deg); opacity: 1 }
+          100% { transform: translateY(95vh) rotate(360deg); opacity: 0 }
+        }
+        /* fallback name used in element creation */
+        @keyframes confettiFallSmall {
+          0% { transform: translateY(-10px) rotate(0deg); opacity: 1 }
+          100% { transform: translateY(85vh) rotate(540deg); opacity: 0 }
+        }
+        .confetti-root{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden}
+      `}</style>
+
+      <div className="app">
+        <div className="panel" role="region" aria-label="Todo list">
+          <div className="header">
+            <div className="logo">
+              <div className="mark">⚡</div>
+              <div>
+                <h1>TaskVault Pro</h1>
+                <p className="lead">Smart task management with drag & drop, priorities & confetti celebrations ✨</p>
+              </div>
+            </div>
+            <div className="task-count">
+              <small style={{ color: isDarkMode ? "#9aa4b2" : "#64748b", fontWeight: 500 }}>
+                Tasks: <strong style={{ marginLeft: 6 }}>{tasks.length}</strong>
+              </small>
+            </div>
           </div>
-          <div>
-            <label className="text-sm block mb-1">Description</label>
-            <textarea 
-              className={`w-full rounded-md border px-3 py-2 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300'}`} 
-              rows={3} 
-              value={description} 
-              onChange={(e) => setDescription(e.target.value)} 
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm block mb-1">Priority</label>
-              <select 
-                className={`w-full rounded-md border px-3 py-2 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300'}`} 
-                value={priority} 
-                onChange={(e) => setPriority(e.target.value)}
+
+          <form className="addRow" onSubmit={addTask}>
+            <div className="form-row">
+              <input
+                className="input"
+                placeholder="Task title..."
+                value={formData.title}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
+                aria-label="Task title"
+              />
+              <select
+                className="select"
+                value={formData.priority}
+                onChange={(e) => setFormData({...formData, priority: e.target.value})}
+                aria-label="Priority"
               >
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
                 <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
               </select>
             </div>
-            <div>
-              <label className="text-sm block mb-1">Status</label>
-              <select 
-                className={`w-full rounded-md border px-3 py-2 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300'}`} 
-                value={status} 
-                onChange={(e) => setStatus(e.target.value)}
+            <div className="form-row">
+              <input
+                className="input"
+                placeholder="Task description..."
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                aria-label="Task description"
+              />
+              <select
+                className="select"
+                value={formData.status}
+                onChange={(e) => setFormData({...formData, status: e.target.value})}
+                aria-label="Status"
               >
                 <option value="pending">Pending</option>
-                <option value="ongoing">Ongoing</option>
+                <option value="in-progress">In Progress</option>
                 <option value="completed">Completed</option>
               </select>
             </div>
+            <button className="btn" type="submit">Add Task</button>
+          </form>
+
+          <div className="list" role="list">
+            {tasks.length === 0 && <div className="empty" style={{ marginTop: 14 }}>No tasks yet — add your first task ✨</div>}
+
+            {tasks.map((t, idx) => (
+              <div
+                key={t.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, idx)}
+                onDragEnter={(e) => handleDragEnter(e, idx)}
+                onDragEnd={handleDragEnd}
+                className={`task`}
+                role="listitem"
+                aria-label={t.title}
+                style={{ cursor: 'grab' }}
+              >
+                <div className="handle" title="Drag to reorder">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+
+                <div className={`title ${t.done ? 'completed' : ''}`}>
+                  <strong>
+                    {t.title}
+                    <span 
+                      className="priority-badge" 
+                      style={{ 
+                        backgroundColor: getPriorityColor(t.priority) + '20', 
+                        color: getPriorityColor(t.priority) 
+                      }}
+                    >
+                      {t.priority}
+                    </span>
+                    <span 
+                      className="status-badge" 
+                      style={{ 
+                        backgroundColor: getStatusColor(t.status) + '20', 
+                        color: getStatusColor(t.status) 
+                      }}
+                    >
+                      {t.status}
+                    </span>
+                  </strong>
+                  <small>{t.description || 'No description'}</small>
+                  <small>{t.done ? 'Completed' : 'Incomplete'}</small>
+                </div>
+
+                <div className="actions">
+                  <button className="icon-btn" type="button" onClick={() => toggleDone(t.id)} title="Toggle complete">
+                    {t.done ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    )}
+                  </button>
+
+                  <button className="icon-btn" type="button" onClick={() => editTask(t.id)} title="Edit">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+
+                  <button className="icon-btn" type="button" onClick={() => setDeleteAlert({ show: true, taskId: t.id })} title="Delete">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        </form>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <button 
-            className={`${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} px-4 py-2 rounded-md`} 
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button 
-            className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700" 
-            onClick={handleSubmit}
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Board ---
-const KanbanBoard = () => {
-  const { isDarkMode } = useTheme();
-  const [activeId, setActiveId] = useState(null);
-
-  // Load from localStorage once
-  const [tasks, setTasks] = useState(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try { return JSON.parse(stored); } catch { /* ignore */ }
-    }
-    return seedTasks;
-  });
-
-  // Persist to localStorage when tasks change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-  }, [tasks]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const tasksByStatus = useMemo(() => ({
-    all: tasks,
-    pending: tasks.filter(t => t.status === 'pending'),
-    ongoing: tasks.filter(t => t.status === 'ongoing'),
-    completed: tasks.filter(t => t.status === 'completed'),
-  }), [tasks]);
-
-  const findContainer = (id) => {
-    if (['all', 'pending', 'ongoing', 'completed'].includes(id)) return id;
-    const task = tasks.find(t => t.id === id);
-    return task ? task.status : null;
-  };
-
-  const handleDragStart = ({ active }) => {
-    setActiveId(active.id);
-  };
-
-  const handleDragEnd = ({ active, over }) => {
-    setActiveId(null);
-    
-    if (!over) return;
-    const activeTask = tasks.find(t => t.id === active.id);
-    if (!activeTask) return;
-
-    const overContainer = findContainer(over.id);
-    if (!overContainer) return;
-
-    // Move to different status (except 'all')
-    if (overContainer !== 'all' && activeTask.status !== overContainer) {
-      setTasks(prev => prev.map(t => t.id === active.id ? { ...t, status: overContainer } : t));
-      if (overContainer === 'completed') {
-        confetti({ particleCount: 120, spread: 70, origin: { y: 0.25 }, colors: ['#22c55e', '#10b981', '#34d399'] });
-      }
-      return;
-    }
-
-    // Reorder visually inside All list
-    if (over.id !== active.id) {
-      const activeIndex = tasks.findIndex(t => t.id === active.id);
-      const overIndex = tasks.findIndex(t => t.id === over.id);
-      setTasks(items => arrayMove(items, activeIndex, overIndex));
-    }
-  };
-
-  // --- CRUD handlers ---
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState(null);
-
-  const openAddModal = () => { 
-    setEditingTask(null); 
-    setIsModalOpen(true); 
-  };
-  
-  const openEditModal = (task) => { 
-    console.log('Opening edit modal for task:', task);
-    setEditingTask(task); 
-    setIsModalOpen(true); 
-  };
-  
-  const closeModal = () => { 
-    console.log('Closing modal');
-    setIsModalOpen(false);
-    setEditingTask(null);
-  };
-
-  const saveTask = ({ title, description, priority, status }) => {
-    console.log('Saving task:', { title, description, priority, status });
-    if (!title.trim()) { closeModal(); return; }
-
-    if (editingTask) {
-      // Update existing
-      console.log('Updating existing task:', editingTask.id);
-      setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, title, description, priority, status } : t));
-    } else {
-      // Create new
-      console.log('Creating new task');
-      const newTask = {
-        id: String(Date.now()),
-        title: title.trim(),
-        description: description.trim(),
-        priority,
-        status,
-        createdAt: Date.now(),
-      };
-      setTasks(prev => [newTask, ...prev]);
-    }
-    
-    if (status === 'completed' && !editingTask) {
-      confetti({ particleCount: 90, spread: 70, origin: { y: 0.25 }, colors: ['#22c55e', '#10b981', '#34d399'] });
-    }
-    closeModal();
-  };
-
-  const deleteTask = (id) => {
-    console.log('Deleting task with ID:', id);
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      setTasks(prev => prev.filter(t => t.id !== id));
-      console.log('Task deleted successfully');
-    }
-  };
-
-  const columns = [
-    { id: 'all', title: 'All' },
-    { id: 'pending', title: 'Pending' },
-    { id: 'ongoing', title: 'Ongoing' },
-    { id: 'completed', title: 'Completed' },
-  ];
-
-  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
-
-  return (
-    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'} min-h-screen p-4 md:p-6 transition-colors duration-200`}>
-      <div className="max-w-7xl mx-auto">
-        {/* KPI Dashboard */}
-        <div className="mb-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-            <div>
-              <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Task Management Board</h1>
-              <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mt-1`}>Drag tasks between columns to update status</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
+            <small style={{ color: isDarkMode ? '#9aa4b2' : '#64748b', fontWeight: 500 }}>{remaining} remaining</small>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="icon-btn" type="button" onClick={markAllDone} title="Mark all done" style={{ padding: '8px 12px', width: 'auto' }}>
+                <span style={{ fontSize: '12px', fontWeight: 500 }}>All Done</span>
+              </button>
+              <button className="icon-btn" type="button" onClick={clearAll} title="Clear" style={{ padding: '8px 12px', width: 'auto' }}>
+                <span style={{ fontSize: '12px', fontWeight: 500 }}>Clear All</span>
+              </button>
             </div>
-            <button 
-              onClick={openAddModal} 
-              className="w-full sm:w-auto inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors"
-            >
-              <FiPlus size={16} /> Add Task
-            </button>
-          </div>
-          
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <KPICard 
-              title="Total Tasks" 
-              value={tasksByStatus.all.length} 
-              icon={FiList} 
-              color="bg-blue-500" 
-              isDarkMode={isDarkMode} 
-            />
-            <KPICard 
-              title="Pending" 
-              value={tasksByStatus.pending.length} 
-              icon={FiClock} 
-              color="bg-yellow-500" 
-              isDarkMode={isDarkMode} 
-            />
-            <KPICard 
-              title="In Progress" 
-              value={tasksByStatus.ongoing.length} 
-              icon={FiPlay} 
-              color="bg-blue-500" 
-              isDarkMode={isDarkMode} 
-            />
-            <KPICard 
-              title="Completed" 
-              value={tasksByStatus.completed.length} 
-              icon={FiCheckCircle} 
-              color="bg-green-500" 
-              isDarkMode={isDarkMode} 
-            />
           </div>
         </div>
 
-        <DndContext 
-          sensors={sensors} 
-          collisionDetection={pointerWithin} 
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 md:mx-0 px-4 snap-x snap-mandatory">
-            {/* All */}
-            <DroppableColumn id="all" title="All" items={tasksByStatus.all} isDarkMode={isDarkMode}>
-              <SortableContext items={tasksByStatus.all.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                {tasksByStatus.all.map((task) => (
-                  <SortableTaskCard key={task.id} task={task} onEdit={openEditModal} onDelete={deleteTask} />
-                ))}
-              </SortableContext>
-            </DroppableColumn>
+        <aside className="panel sidebar">
+          <h3>Overview</h3>
+          <p className="lead" style={{ marginTop: 6 }}>Quick stats and filters</p>
 
-            {/* Pending */}
-            <DroppableColumn id="pending" title="Pending" items={tasksByStatus.pending} isDarkMode={isDarkMode}>
-              <SortableContext items={tasksByStatus.pending.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                {tasksByStatus.pending.map((task) => (
-                  <SortableTaskCard key={task.id} task={task} onEdit={openEditModal} onDelete={deleteTask} />
-                ))}
-              </SortableContext>
-            </DroppableColumn>
-
-            {/* Ongoing */}
-            <DroppableColumn id="ongoing" title="Ongoing" items={tasksByStatus.ongoing} isDarkMode={isDarkMode}>
-              <SortableContext items={tasksByStatus.ongoing.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                {tasksByStatus.ongoing.map((task) => (
-                  <SortableTaskCard key={task.id} task={task} onEdit={openEditModal} onDelete={deleteTask} />
-                ))}
-              </SortableContext>
-            </DroppableColumn>
-
-            {/* Completed */}
-            <DroppableColumn id="completed" title="Completed" items={tasksByStatus.completed} isDarkMode={isDarkMode}>
-              <SortableContext items={tasksByStatus.completed.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                {tasksByStatus.completed.map((task) => (
-                  <SortableTaskCard key={task.id} task={task} onEdit={openEditModal} onDelete={deleteTask} />
-                ))}
-              </SortableContext>
-            </DroppableColumn>
+          <div className="stats">
+            <div className="stat">
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{tasks.length}</div>
+              <div style={{ fontSize: 12, color: isDarkMode ? '#9aa4b2' : '#64748b' }}>Total</div>
+            </div>
+            <div className="stat">
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{tasks.filter(t => t.done).length}</div>
+              <div style={{ fontSize: 12, color: isDarkMode ? '#9aa4b2' : '#64748b' }}>Completed</div>
+            </div>
           </div>
 
-          {/* Drag Overlay for smooth animations */}
-          <DragOverlay>
-            {activeTask ? <TaskCard task={activeTask} isOverlay={true} /> : null}
-          </DragOverlay>
-        </DndContext>
+          <div style={{ marginTop: 16 }}>
+            <h4 style={{ margin: '8px 0' }}>Priority Distribution</h4>
+            <div style={{ color: isDarkMode ? '#9aa4b2' : '#64748b', fontSize: 13, fontWeight: 500 }}>
+              <div>High: {tasks.filter(t => t.priority === 'high').length}</div>
+              <div>Medium: {tasks.filter(t => t.priority === 'medium').length}</div>
+              <div>Low: {tasks.filter(t => t.priority === 'low').length}</div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <h4 style={{ margin: '8px 0' }}>Tips</h4>
+            <ul style={{ color: isDarkMode ? '#9aa4b2' : '#64748b', paddingLeft: 18, lineHeight: 1.6, fontWeight: 500 }}>
+              <li>Drag items to reorder them.</li>
+              <li>Click the circle icon to complete a task and trigger confetti.</li>
+              <li>Use the Edit button to quickly rename a task.</li>
+              <li>Set priority and status for better organization.</li>
+            </ul>
+          </div>
+
+          <div style={{ marginTop: 18 }}>
+            <h4 style={{ margin: '8px 0' }}>Accessibility</h4>
+            <p style={{ color: isDarkMode ? '#9aa4b2' : '#64748b', fontSize: 13, fontWeight: 500 }}>Keyboard-first interactions available via browser defaults. Use the buttons for actions.</p>
+          </div>
+        </aside>
       </div>
 
-      <TaskModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        onSave={saveTask}
-        initialData={editingTask}
-        isDarkMode={isDarkMode}
+      {/* confetti root */}
+      <div ref={confettiRootRef} className="confetti-root" aria-hidden="true"></div>
+
+      {/* small helpful footer */}
+      <div style={{ maxWidth: 1100, margin: '18px auto 0', color: isDarkMode ? '#9aa4b2' : '#64748b', fontSize: 13, fontWeight: 500 }}>
+        Tip: This preview uses an in-component confetti implementation (no external library) so it works inside the canvas preview.
+      </div>
+
+      {/* Custom Alerts */}
+      <CustomAlert
+        isOpen={deleteAlert.show}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        onClose={() => setDeleteAlert({ show: false, taskId: null })}
+        onConfirm={handleDeleteConfirm}
       />
+
+      <CustomAlert
+        isOpen={clearAllAlert}
+        title="Clear All Tasks"
+        message="Are you sure you want to clear all tasks? This action cannot be undone."
+        onClose={() => setClearAllAlert(false)}
+        onConfirm={handleClearAllConfirm}
+      />
+
+      <CustomAlert
+        isOpen={editAlert.show}
+        title="Edit Task"
+        message={
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', padding: '10px 0' }}>
+            <div>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '8px', 
+                fontWeight: '600', 
+                color: isDarkMode ? '#e6eef8' : '#1e293b',
+                fontSize: '14px'
+              }}>
+                Task Title *
+              </label>
+              <input
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  border: `2px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                  background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)',
+                  color: isDarkMode ? '#e6eef8' : '#1e293b',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  outline: 'none',
+                  transition: 'all 0.2s ease'
+                }}
+                placeholder="Enter task title..."
+                value={editAlert.title}
+                onChange={(e) => setEditAlert({...editAlert, title: e.target.value})}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#7c3aed';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '8px', 
+                fontWeight: '600', 
+                color: isDarkMode ? '#e6eef8' : '#1e293b',
+                fontSize: '14px'
+              }}>
+                Task Description
+              </label>
+              <textarea
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  border: `2px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                  background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)',
+                  color: isDarkMode ? '#e6eef8' : '#1e293b',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  outline: 'none',
+                  transition: 'all 0.2s ease',
+                  minHeight: '80px',
+                  resize: 'vertical',
+                  fontFamily: 'inherit'
+                }}
+                placeholder="Enter task description..."
+                value={editAlert.description}
+                onChange={(e) => setEditAlert({...editAlert, description: e.target.value})}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#7c3aed';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '8px', 
+                  fontWeight: '600', 
+                  color: isDarkMode ? '#e6eef8' : '#1e293b',
+                  fontSize: '14px'
+                }}>
+                  Priority
+                </label>
+                <select
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: `2px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                    background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)',
+                    color: isDarkMode ? '#e6eef8' : '#1e293b',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    outline: 'none',
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer'
+                  }}
+                  value={editAlert.task?.priority || 'medium'}
+                  onChange={(e) => setEditAlert({...editAlert, task: {...editAlert.task, priority: e.target.value}})}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#7c3aed';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '8px', 
+                  fontWeight: '600', 
+                  color: isDarkMode ? '#e6eef8' : '#1e293b',
+                  fontSize: '14px'
+                }}>
+                  Status
+                </label>
+                <select
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: `2px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                    background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)',
+                    color: isDarkMode ? '#e6eef8' : '#1e293b',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    outline: 'none',
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer'
+                  }}
+                  value={editAlert.task?.status || 'pending'}
+                  onChange={(e) => setEditAlert({...editAlert, task: {...editAlert.task, status: e.target.value}})}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#7c3aed';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                >
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        }
+        onClose={() => setEditAlert({ show: false, task: null, title: "", description: "" })}
+        onConfirm={handleEditConfirm}
+      />
+
     </div>
   );
-};
-
-export default KanbanBoard;
+}
