@@ -288,7 +288,14 @@
 
 .pagination {
     display: flex;
+    align-items: center;
     gap: 0.5rem;
+}
+
+.page-info {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0 0.5rem;
 }
 
 .pagination-btn {

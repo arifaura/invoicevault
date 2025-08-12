@@ -101,6 +101,10 @@ const Invoices = () => {
   const [bulkDeleteAlert, setBulkDeleteAlert] = useState(false);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchInvoices();
@@ -155,12 +159,17 @@ const Invoices = () => {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      const validInvoiceIds = filteredInvoices
+      // Select only invoices on current page
+      const validInvoiceIds = paginatedInvoices
         .filter(invoice => invoice?.id)
         .map(invoice => invoice.id);
-      setSelectedInvoices(validInvoiceIds);
+      setSelectedInvoices(prev => [...new Set([...prev, ...validInvoiceIds])]);
     } else {
-      setSelectedInvoices([]);
+      // Deselect only invoices on current page
+      const currentPageIds = paginatedInvoices
+        .filter(invoice => invoice?.id)
+        .map(invoice => invoice.id);
+      setSelectedInvoices(prev => prev.filter(id => !currentPageIds.includes(id)));
     }
   };
 
@@ -350,6 +359,28 @@ const Invoices = () => {
       return true;
     });
   }, [invoices, searchQuery, filters]);
+
+  // Pagination logic
+  const totalPages = Math.max(1, Math.ceil(filteredInvoices.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedInvoices = filteredInvoices.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filters, itemsPerPage]);
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1);
+  };
 
   const calculateWarrantyDaysLeft = (purchaseDate, warrantyPeriod) => {
     if (!warrantyPeriod || warrantyPeriod === 'N/A') return null;
@@ -639,7 +670,8 @@ const Invoices = () => {
                     <input
                       type="checkbox"
                       onChange={handleSelectAll}
-                      checked={selectedInvoices.length > 0 && selectedInvoices.length === filteredInvoices.length}
+                      checked={paginatedInvoices.length > 0 && paginatedInvoices.every(invoice => selectedInvoices.includes(invoice?.id))}
+                      indeterminate={paginatedInvoices.some(invoice => selectedInvoices.includes(invoice?.id)) && !paginatedInvoices.every(invoice => selectedInvoices.includes(invoice?.id))}
                       className="checkbox"
                       disabled={loading}
                     />
@@ -669,7 +701,7 @@ const Invoices = () => {
                     <TableRowSkeleton />
                   </>
                 ) : (
-                  filteredInvoices.map((invoice, index) => {
+                  paginatedInvoices.map((invoice, index) => {
                     const daysLeft = calculateWarrantyDaysLeft(invoice?.purchase_date, invoice?.warranty_period);
                     const warrantyStatusClass = getWarrantyStatusClass(daysLeft);
                     
@@ -683,7 +715,7 @@ const Invoices = () => {
                             className="checkbox"
                           />
                         </td>
-                        <td className="serial-number">{index + 1}</td>
+                        <td className="serial-number">{startIndex + index + 1}</td>
                         <td className="invoice-title">
                           <div className="text-truncate">{invoice?.title || 'N/A'}</div>
                         </td>
@@ -755,15 +787,33 @@ const Invoices = () => {
 
       <div className="table-footer">
         <div className="per-page-select">
-          <select defaultValue="10">
+          <select 
+            value={itemsPerPage} 
+            onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
+          >
             <option value="10">10 per page</option>
             <option value="20">20 per page</option>
             <option value="50">50 per page</option>
           </select>
         </div>
         <div className="pagination">
-          <button className="pagination-btn" disabled>Previous</button>
-          <button className="pagination-btn">Next</button>
+          <button 
+            className="pagination-btn" 
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1 || filteredInvoices.length === 0}
+          >
+            Previous
+          </button>
+          <span className="page-info">
+            Page {filteredInvoices.length > 0 ? currentPage : 0} of {filteredInvoices.length > 0 ? totalPages : 0} ({filteredInvoices.length} total)
+          </span>
+          <button 
+            className="pagination-btn"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages || filteredInvoices.length === 0}
+          >
+            Next
+          </button>
         </div>
       </div>
 
