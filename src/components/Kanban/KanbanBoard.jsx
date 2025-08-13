@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from '../../context/ThemeContext';
 import CustomAlert from '../Common/CustomAlert';
+import { supabase } from '../../utils/supabaseClient';
+import { useAuth } from '../../context/AuthContext';
 
 // Modern Todo — React component that can be previewed in the canvas
 // This file replaces the previous full-HTML demo (which caused a parsing error
@@ -12,19 +14,11 @@ function uid() {
 
 export default function ModernTodo() {
   const { isDarkMode } = useTheme();
+  const { user } = useAuth();
   
-  const [tasks, setTasks] = useState(() => {
-    try {
-      const raw = localStorage.getItem("modern-todo.tasks");
-      return raw ? JSON.parse(raw) : [
-        { id: uid(), title: "Design beautiful UI", description: "Create a modern and responsive design", priority: "high", status: "pending", done: false },
-        { id: uid(), title: "Add drag & drop reorder", description: "Implement drag and drop functionality", priority: "medium", status: "pending", done: false },
-        { id: uid(), title: "Celebrate with confetti on complete", description: "Add confetti animation when tasks are completed", priority: "low", status: "pending", done: false }
-      ];
-    } catch (e) {
-      return [];
-    }
-  });
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [realtimeStatus, setRealtimeStatus] = useState('connecting');
 
   const [formData, setFormData] = useState({
     title: "",
@@ -36,18 +30,158 @@ export default function ModernTodo() {
   // Alert states
   const [deleteAlert, setDeleteAlert] = useState({ show: false, taskId: null });
   const [clearAllAlert, setClearAllAlert] = useState(false);
-  const [editAlert, setEditAlert] = useState({ show: false, task: null, title: "", description: "" });
+  const [editAlert, setEditAlert] = useState({ show: false, task: null, title: "", description: "", priority: "medium", status: "pending" });
   
   const dragItem = useRef(null);
   const dragNode = useRef(null);
   const confettiRootRef = useRef(null);
 
-  // persist tasks
-  useEffect(() => {
+  // Fetch tasks from Supabase
+  const fetchTasks = async () => {
     try {
-      localStorage.setItem("modern-todo.tasks", JSON.stringify(tasks));
-    } catch (e) {}
-  }, [tasks]);
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        return;
+      }
+
+      setTasks(data || []);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+  // Add task to database
+  const addTaskToDatabase = async (taskData) => {
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([
+          {
+            ...taskData,
+            user_id: user?.id,
+            done: false,
+            created_at: new Date().toISOString()
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding task:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error adding task:', error);
+      return null;
+    }
+  };
+
+  // Update task in database
+  const updateTaskInDatabase = async (taskId, updates) => {
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .update(updates)
+        .eq('id', taskId)
+        .eq('user_id', user?.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating task:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error updating task:', error);
+      return null;
+    }
+  };
+
+  // Delete task from database
+  const deleteTaskFromDatabase = async (taskId) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId)
+        .eq('user_id', user?.id);
+
+      if (error) {
+        console.error('Error deleting task:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      return false;
+    }
+  };
+
+  // Set up real-time subscription
+  useEffect(() => {
+    if (!user) return;
+
+    // Fetch initial tasks
+    fetchTasks();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('tasks_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Real-time change:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            setTasks(prev => [payload.new, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setTasks(prev => prev.map(task => 
+              task.id === payload.new.id ? payload.new : task
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setTasks(prev => prev.filter(task => task.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          setRealtimeStatus('connected');
+        } else if (status === 'CHANNEL_ERROR') {
+          setRealtimeStatus('error');
+        } else if (status === 'TIMED_OUT') {
+          setRealtimeStatus('timeout');
+        }
+      });
+
+    // No more sample tasks initialization
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // Simple DOM-based confetti (no external deps) — creates colorful falling particles
   function runConfetti(count = 80) {
@@ -86,42 +220,51 @@ export default function ModernTodo() {
     }, 3500);
   }
 
-  function addTask(e) {
+  async function addTask(e) {
     e.preventDefault();
     const title = formData.title.trim();
     const description = formData.description.trim();
-    if (!title) return;
+    if (!title || !user) return;
     
     const newTask = {
-      id: uid(),
       title,
       description,
       priority: formData.priority,
-      status: formData.status,
-      done: false
+      status: formData.status
     };
     
-    setTasks((t) => [newTask, ...t]);
-    setFormData({
-      title: "",
-      description: "",
-      priority: "medium",
-      status: "pending"
-    });
+    const addedTask = await addTaskToDatabase(newTask);
+    if (addedTask) {
+      setFormData({
+        title: "",
+        description: "",
+        priority: "medium",
+        status: "pending"
+      });
+    }
   }
 
-  function toggleDone(id) {
-    setTasks((old) => {
-      const next = old.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
-      const toggled = next.find((x) => x.id === id);
-      // run confetti if it has been marked done
-      if (toggled && toggled.done) runConfetti(120);
-      return next;
-    });
+  async function toggleDone(id) {
+    if (!user) return;
+    
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    const updates = { done: !task.done };
+    const updatedTask = await updateTaskInDatabase(id, updates);
+    
+    if (updatedTask && updatedTask.done) {
+      runConfetti(120);
+    }
   }
 
-  function removeTask(id) {
-    setTasks((old) => old.filter((t) => t.id !== id));
+  async function removeTask(id) {
+    if (!user) return;
+    
+    const success = await deleteTaskFromDatabase(id);
+    if (success) {
+      setTasks(prev => prev.filter(t => t.id !== id));
+    }
   }
 
   function editTask(id) {
@@ -132,32 +275,47 @@ export default function ModernTodo() {
       show: true,
       task,
       title: task.title,
-      description: task.description
+      description: task.description,
+      priority: task.priority,
+      status: task.status
     });
   }
 
-  const handleEditConfirm = () => {
-    const { task, title, description } = editAlert;
-    if (title.trim() === "") return;
+  const handleEditConfirm = async () => {
+    const { task, title, description, priority, status } = editAlert;
+    if (title.trim() === "" || !user) return;
     
-    setTasks((old) => old.map((t) => (t.id === task.id ? { 
-      ...t, 
-      title: title.trim(), 
+    const updates = {
+      title: title.trim(),
       description: description.trim(),
-      priority: task.priority,
-      status: task.status
-    } : t)));
-    setEditAlert({ show: false, task: null, title: "", description: "" });
+      priority: priority,
+      status: status
+    };
+    
+    const updatedTask = await updateTaskInDatabase(task.id, updates);
+    if (updatedTask) {
+      setEditAlert({ show: false, task: null, title: "", description: "", priority: "medium", status: "pending" });
+    }
   };
 
-  const handleDeleteConfirm = () => {
-    removeTask(deleteAlert.taskId);
+  const handleDeleteConfirm = async () => {
+    await removeTask(deleteAlert.taskId);
     setDeleteAlert({ show: false, taskId: null });
   };
 
-  const handleClearAllConfirm = () => {
-    setTasks([]);
-    setClearAllAlert(false);
+  const handleClearAllConfirm = async () => {
+    if (!user) return;
+    
+    // Delete all tasks for the user
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (!error) {
+      setTasks([]);
+      setClearAllAlert(false);
+    }
   };
 
   function handleDragStart(e, index) {
@@ -188,13 +346,19 @@ export default function ModernTodo() {
     dragNode.current = null;
   }
 
-  function markAllDone() {
-    setTasks((old) => {
-      const next = old.map((t) => ({ ...t, done: true }));
-      // celebrate once
+  async function markAllDone() {
+    if (!user) return;
+    
+    // Update all tasks to done
+    const { error } = await supabase
+      .from('tasks')
+      .update({ done: true })
+      .eq('user_id', user.id)
+      .eq('done', false);
+
+    if (!error) {
       runConfetti(140);
-      return next;
-    });
+    }
   }
 
   function clearAll() {
@@ -220,6 +384,49 @@ export default function ModernTodo() {
       default: return '#6b7280';
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div style={{ 
+        padding: 20, 
+        fontFamily: "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial", 
+        minHeight: '100vh', 
+        background: isDarkMode ? 'linear-gradient(180deg,#07102a 0%, #071b2f 60%)' : 'linear-gradient(180deg,#f8fafc 0%, #e2e8f0 60%)', 
+        color: isDarkMode ? '#e6eef8' : '#1e293b',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', marginBottom: '16px' }}>⚡</div>
+          <div style={{ fontSize: '18px', fontWeight: '600' }}>Loading TaskVault Pro...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt if no user
+  if (!user) {
+    return (
+      <div style={{ 
+        padding: 20, 
+        fontFamily: "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial", 
+        minHeight: '100vh', 
+        background: isDarkMode ? 'linear-gradient(180deg,#07102a 0%, #071b2f 60%)' : 'linear-gradient(180deg,#f8fafc 0%, #e2e8f0 60%)', 
+        color: isDarkMode ? '#e6eef8' : '#1e293b',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', marginBottom: '16px' }}>🔒</div>
+          <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Authentication Required</div>
+          <div style={{ fontSize: '14px', opacity: 0.8 }}>Please log in to access your tasks</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ 
@@ -279,6 +486,12 @@ export default function ModernTodo() {
           100% { transform: translateY(85vh) rotate(540deg); opacity: 0 }
         }
         .confetti-root{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden}
+        
+        /* real-time status indicator */
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
       `}</style>
 
       <div className="app">
@@ -286,7 +499,7 @@ export default function ModernTodo() {
           <div className="header">
             <div className="logo">
               <div className="mark">⚡</div>
-              <div>
+            <div>
                 <h1>TaskVault Pro</h1>
                 <p className="lead">Smart task management with drag & drop, priorities & confetti celebrations ✨</p>
               </div>
@@ -295,6 +508,28 @@ export default function ModernTodo() {
               <small style={{ color: isDarkMode ? "#9aa4b2" : "#64748b", fontWeight: 500 }}>
                 Tasks: <strong style={{ marginLeft: 6 }}>{tasks.length}</strong>
               </small>
+            </div>
+            <div style={{ 
+              position: 'absolute', 
+              right: '20px', 
+              top: '20px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px',
+              fontSize: '11px',
+              color: isDarkMode ? '#9aa4b2' : '#64748b'
+            }}>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: realtimeStatus === 'connected' ? '#10b981' : 
+                               realtimeStatus === 'connecting' ? '#f59e0b' : '#ef4444',
+                animation: realtimeStatus === 'connecting' ? 'pulse 2s infinite' : 'none'
+              }}></div>
+              <span style={{ textTransform: 'uppercase', fontWeight: '500' }}>
+                {realtimeStatus}
+              </span>
             </div>
           </div>
 
@@ -357,7 +592,7 @@ export default function ModernTodo() {
               >
                 <div className="handle" title="Drag to reorder">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </div>
+            </div>
 
                 <div className={`title ${t.done ? 'completed' : ''}`}>
                   <strong>
@@ -400,12 +635,12 @@ export default function ModernTodo() {
 
                   <button className="icon-btn" type="button" onClick={() => setDeleteAlert({ show: true, taskId: t.id })} title="Delete">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </button>
+            </button>
                 </div>
               </div>
             ))}
           </div>
-
+          
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
             <small style={{ color: isDarkMode ? '#9aa4b2' : '#64748b', fontWeight: 500 }}>{remaining} remaining</small>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -458,7 +693,7 @@ export default function ModernTodo() {
             <p style={{ color: isDarkMode ? '#9aa4b2' : '#64748b', fontSize: 13, fontWeight: 500 }}>Keyboard-first interactions available via browser defaults. Use the buttons for actions.</p>
           </div>
         </aside>
-      </div>
+          </div>
 
       {/* confetti root */}
       <div ref={confettiRootRef} className="confetti-root" aria-hidden="true"></div>
@@ -590,8 +825,8 @@ export default function ModernTodo() {
                     transition: 'all 0.2s ease',
                     cursor: 'pointer'
                   }}
-                  value={editAlert.task?.priority || 'medium'}
-                  onChange={(e) => setEditAlert({...editAlert, task: {...editAlert.task, priority: e.target.value}})}
+                  value={editAlert.priority}
+                  onChange={(e) => setEditAlert({...editAlert, priority: e.target.value})}
                   onFocus={(e) => {
                     e.target.style.borderColor = '#7c3aed';
                     e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)';
@@ -630,8 +865,8 @@ export default function ModernTodo() {
                     transition: 'all 0.2s ease',
                     cursor: 'pointer'
                   }}
-                  value={editAlert.task?.status || 'pending'}
-                  onChange={(e) => setEditAlert({...editAlert, task: {...editAlert.task, status: e.target.value}})}
+                  value={editAlert.status}
+                  onChange={(e) => setEditAlert({...editAlert, status: e.target.value})}
                   onFocus={(e) => {
                     e.target.style.borderColor = '#7c3aed';
                     e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)';
@@ -649,7 +884,7 @@ export default function ModernTodo() {
             </div>
           </div>
         }
-        onClose={() => setEditAlert({ show: false, task: null, title: "", description: "" })}
+        onClose={() => setEditAlert({ show: false, task: null, title: "", description: "", priority: "medium", status: "pending" })}
         onConfirm={handleEditConfirm}
       />
 
