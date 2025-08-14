@@ -15,8 +15,11 @@ const ForgotPassword = ({ onBackToLogin }) => {
     setLoading(true);
     
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password?type=recovery`
+      // Ensure we pass a valid redirect URL for recovery flow
+      // This must be whitelisted in Supabase Auth > URL Configuration > Redirect URLs
+      const redirectTo = `${window.location.origin}/reset-password`;
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
       });
       
       if (error) throw error;
@@ -64,7 +67,18 @@ const ForgotPassword = ({ onBackToLogin }) => {
 
   return (
     <div className="card shadow-sm border-0 px-3 px-sm-4 py-3">
-      <Link to="/login" className="text-decoration-none text-secondary mb-4">
+      <Link
+        to="/login"
+        className="text-decoration-none text-secondary mb-4"
+        onClick={(e) => {
+          // If this component is rendered inside the login route, we need to
+          // flip the parent state instead of navigating to the same route.
+          if (onBackToLogin) {
+            e.preventDefault();
+            onBackToLogin();
+          }
+        }}
+      >
         <BiArrowBack className="me-2" />
         Back to login
       </Link>

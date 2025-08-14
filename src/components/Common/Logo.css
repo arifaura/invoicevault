@@ -1,90 +1,113 @@
 .logo-container {
   display: flex;
   align-items: center;
-  padding: 0;
+  gap: 12px;
+  text-decoration: none;
+  transition: all 0.3s ease;
 }
 
-.logo-image {
-  height: 65px;
-  width: auto;
-  object-fit: contain;
-  border-radius: 8px;
+.logo-container:hover {
+  transform: translateY(-1px);
 }
 
 .logo-icon {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  color: white;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  flex-shrink: 0;
+}
+
+.logo-icon svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.logo-primary {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 700;
-  color: #111827;
-  margin: 0;
-  font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  letter-spacing: -0.025em;
+}
+
+.logo-secondary {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--primary-color);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 /* Size variants */
-.logo-small .logo-icon {
+.logo-container.small .logo-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.logo-container.small .logo-primary {
+  font-size: 1rem;
+}
+
+.logo-container.small .logo-secondary {
+  font-size: 0.75rem;
+}
+
+.logo-container.medium .logo-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.logo-container.large .logo-icon svg {
   width: 40px;
   height: 40px;
-  font-size: 16px;
 }
 
-.logo-small .logo-text {
-  font-size: 18px;
+.logo-container.large .logo-primary {
+  font-size: 1.5rem;
 }
 
-.logo-small .logo-image {
-  height: 50px;
+.logo-container.large .logo-secondary {
+  font-size: 1rem;
 }
 
-.logo-medium .logo-icon {
+.logo-container.xlarge .logo-icon svg {
   width: 48px;
   height: 48px;
-  font-size: 20px;
 }
 
-.logo-medium .logo-text {
-  font-size: 24px;
+.logo-container.xlarge .logo-primary {
+  font-size: 2rem;
 }
 
-.logo-medium .logo-image {
-  height: 65px;
+.logo-container.xlarge .logo-secondary {
+  font-size: 1.25rem;
 }
 
-.logo-large .logo-icon {
-  width: 64px;
-  height: 64px;
-  font-size: 24px;
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .logo-primary {
+    color: #ffffff;
+  }
+  
+  .logo-secondary {
+    color: #6366f1;
+  }
 }
 
-.logo-large .logo-text {
-  font-size: 32px;
-}
-
-.logo-large .logo-image {
-  height: 80px;
-}
-
-.logo-xlarge .logo-icon {
-  width: 96px;
-  height: 96px;
-  font-size: 32px;
-}
-
-.logo-xlarge .logo-text {
-  font-size: 40px;
-}
-
-.logo-xlarge .logo-image {
-  height: 100px;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .logo-container {
+    gap: 8px;
+  }
+  
+  .logo-primary {
+    font-size: 1.125rem;
+  }
+  
+  .logo-secondary {
+    font-size: 0.75rem;
+  }
 }
