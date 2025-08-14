@@ -188,9 +188,44 @@ const Settings = () => {
         throw new Error('New passwords do not match');
       }
 
-      const { error } = await supabase.auth.updateUser({
-        password: securityForm.newPassword
+      // Ensure session exists (refresh if necessary)
+      let { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+        if (refreshErr || !refreshed?.session) {
+          throw new Error('Your session expired. Please sign in again.');
+        }
+        sessionData = refreshed;
+      }
+
+      // Determine if user can set a password (non-OAuth)
+      const { data: userData } = await supabase.auth.getUser();
+      const isEmailUser = !!userData?.user?.identities?.some((i) => i.provider === 'email');
+      if (!isEmailUser) {
+        throw new Error('This account uses social login. Password is managed by your provider.');
+      }
+
+      // Re-authenticate using current password for email/password users
+      const { data: signinData, error: signinErr } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: securityForm.currentPassword,
       });
+      if (signinErr) {
+        throw new Error('Current password is incorrect.');
+      }
+
+      // Make sure the new session returned by signIn is set and valid
+      if (signinData?.session) {
+        await supabase.auth.setSession({
+          access_token: signinData.session.access_token,
+          refresh_token: signinData.session.refresh_token,
+        });
+        // Give auth state a tick to propagate
+        await new Promise((r) => setTimeout(r, 150));
+        await supabase.auth.refreshSession();
+      }
+
+      const { error } = await supabase.auth.updateUser({ password: securityForm.newPassword });
 
       if (error) throw error;
 
@@ -201,12 +236,16 @@ const Settings = () => {
         confirmPassword: ''
       });
 
-      toast.success('Password updated successfully!');
+      toast.success('Password updated successfully! Please sign in again.');
       addNotification({
         type: 'success',
         message: 'Password updated successfully',
         icon: <FiLock size={16} />
       });
+
+      // Force re-login for security
+      await supabase.auth.signOut();
+      window.location.href = '/login';
     } catch (error) {
       // console.error('Error updating password:', error);
       toast.error(error.message || 'Failed to update password');

@@ -265,9 +265,9 @@ const Home = () => {
 							<path d="M0 30 L15 28 L30 26 L45 20 L60 24 L75 16 L90 18 L105 10 L120 12" fill="none" stroke="var(--accent)" strokeWidth="2"/>
 							<polygon points="0,40 0,30 15,28 30,26 45,20 60,24 75,16 90,18 105,10 120,12 120,40" fill="url(#grad)"/>
 						</svg>
-					</div>
-				</div>
-          </div>
+        </div>
+            </div>
+            </div>
 		</section>
 
       {/* Minimal CTA Section */}
@@ -282,8 +282,8 @@ const Home = () => {
                 <span>✓ No credit card required</span>
                 <span>✓ 14-day free trial</span>
                 <span>✓ Cancel anytime</span>
-          </div>
-          </div>
+            </div>
+            </div>
           </div>
         </div>
       </section>
@@ -321,16 +321,16 @@ const Home = () => {
               <svg className="arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-            </div>
+          </div>
             <div className="plan premium" role="button" tabIndex={0}>
               <div>
                 <div className="title">Premium</div>
                 <div className="price">£6.99/month</div>
-              </div>
+          </div>
               <svg className="arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M9 6l6 6-6 6" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-            </div>
+          </div>
           </div>
         </div>
       </section>

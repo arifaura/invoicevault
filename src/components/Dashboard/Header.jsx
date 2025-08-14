@@ -14,7 +14,7 @@ import "./Header.css";
 
 const Header = ({ onMenuClick }) => {
   const { theme, toggleTheme } = useTheme();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications, dnd, setDnd, requestDesktopPermission } =
     useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -82,14 +82,15 @@ const Header = ({ onMenuClick }) => {
           </button>
 
           {showNotifications && (
-            <div className="notification-dropdown">
+              <div className="notification-dropdown">
               <div className="notification-header">
                 <h3>Notifications</h3>
-                {unreadCount > 0 && (
-                  <button className="mark-all-read" onClick={markAllAsRead}>
-                    Mark all as read
-                  </button>
-                )}
+                  <div className="notification-actions">
+                    <button className="mark-all-read" onClick={markAllAsRead} disabled={unreadCount===0}>Mark all as read</button>
+                    <button className="mark-all-read" onClick={clearNotifications} disabled={!notifications.length}>Clear</button>
+                    <button className={`mark-all-read ${dnd?'active':''}`} onClick={() => setDnd(!dnd)}>{dnd ? 'DND On' : 'DND Off'}</button>
+                    <button className="mark-all-read" onClick={requestDesktopPermission}>Desktop</button>
+                  </div>
               </div>
               <div className="notification-list">
                 {notifications.length > 0 ? (
