@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { BsEyeFill, BsEyeSlashFill } from 'react-icons/bs';
 import toast from 'react-hot-toast';
 import { supabase } from '../../utils/supabaseClient';
@@ -13,18 +13,31 @@ const ResetPassword = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+  const [ready, setReady] = useState(false);
+  const location = useLocation();
 
-  // Remove the second useEffect that was automatically redirecting
+  // Ensure the recovery session is established from the email link
   useEffect(() => {
-    // Log URL parameters for debugging
-    const params = new URLSearchParams(window.location.search);
-    const hash = new URLSearchParams(window.location.hash.substring(1));
-    
-    console.log('URL Parameters:', {
-      search: Object.fromEntries(params.entries()),
-      hash: Object.fromEntries(hash.entries())
-    });
-  }, []);
+    const init = async () => {
+      try {
+        // Supabase usually appends tokens in the URL hash: #access_token=...&refresh_token=...&type=recovery
+        const hash = new URLSearchParams(window.location.hash.substring(1));
+        const access_token = hash.get('access_token');
+        const refresh_token = hash.get('refresh_token');
+
+        if (access_token && refresh_token) {
+          await supabase.auth.setSession({ access_token, refresh_token });
+        }
+
+        // As a fallback, check if we already have a session (AuthProvider may have set it)
+        const { data: { session } } = await supabase.auth.getSession();
+        setReady(!!session);
+      } catch (e) {
+        setReady(false);
+      }
+    };
+    init();
+  }, [location]);
 
   const handlePasswordChange = (e, isConfirm = false) => {
     const value = e.target.value;
@@ -55,19 +68,8 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      // Get the token from either URL parameters or hash
-      const params = new URLSearchParams(window.location.search);
-      const hash = new URLSearchParams(window.location.hash.substring(1));
-      const token = params.get('token') || hash.get('access_token');
-      
-      if (!token) {
-        throw new Error('Reset token is missing');
-      }
-
-      // Update the password
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      // Attempt the update using the recovery session established from the email link
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
 
       if (error) throw error;
 
@@ -80,6 +82,21 @@ const ResetPassword = () => {
       setLoading(false);
     }
   };
+
+  if (!ready) {
+    return (
+      <div className="card shadow-sm border-0 px-3 px-sm-4 py-3">
+        <div className="text-center mb-4">
+          <div className="d-flex justify-content-center mb-3">
+            <Logo size="xlarge" />
+          </div>
+          <h1 className="h5 fw-normal mb-1">Reset link invalid or expired</h1>
+          <p className="text-muted">Please open the latest password reset email or request a new link.</p>
+          <Link className="btn btn-outline-secondary mt-2" to="/forgot-password">Request new link</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="card shadow-sm border-0 px-3 px-sm-4 py-3">
