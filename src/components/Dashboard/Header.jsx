@@ -44,7 +44,7 @@ const Header = ({ onMenuClick }) => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate('/login');
+      navigate('/'); // Redirect to home page instead of login
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Failed to sign out. Please try again.');
@@ -64,6 +64,65 @@ const Header = ({ onMenuClick }) => {
     if (profile?.avatar) return profile.avatar;
     return null;
   }, [profile]);
+
+  // Handle notification toggle with error handling
+  const handleNotificationToggle = () => {
+    try {
+      setShowNotifications(!showNotifications);
+    } catch (error) {
+      console.error('Error toggling notifications:', error);
+      setShowNotifications(false);
+    }
+  };
+
+  // Safe notification rendering with fallback
+  const renderNotifications = () => {
+    try {
+      if (!notifications || !Array.isArray(notifications)) {
+        return <p className="no-notifications">No notifications</p>;
+      }
+
+      if (notifications.length === 0) {
+        return <p className="no-notifications">No notifications</p>;
+      }
+
+      return notifications.map((notification) => (
+        <div
+          key={notification.id || Math.random()}
+          className={`notification-item ${
+            !notification.read ? "unread" : ""
+          }`}
+          onClick={() => {
+            try {
+              if (notification.id) {
+                markAsRead(notification.id);
+              }
+            } catch (error) {
+              console.error('Error marking notification as read:', error);
+            }
+          }}
+        >
+          <div className="notification-icon">
+            {notification.icon || '📢'}
+          </div>
+          <div className="notification-content">
+            <p className="notification-message">
+              {notification.message || 'Notification'}
+            </p>
+            <span className="notification-time">
+              {notification.timestamp ? 
+                new Date(notification.timestamp).toLocaleTimeString() : 
+                'Just now'
+              }
+            </span>
+          </div>
+        </div>
+      ));
+    } catch (error) {
+      console.error('Error rendering notifications:', error);
+      return <p className="no-notifications">Error loading notifications</p>;
+    }
+  };
 
   return (
     <header className="dashboard-header">
@@ -92,7 +151,8 @@ const Header = ({ onMenuClick }) => {
         <div className="notification-wrapper" ref={notificationRef}>
           <button
             className="notification-btn"
-            onClick={() => setShowNotifications(!showNotifications)}
+            onClick={handleNotificationToggle}
+            aria-label="Toggle notifications"
           >
             <IoNotificationsOutline size={20} />
             {unreadCount > 0 && (
@@ -101,44 +161,64 @@ const Header = ({ onMenuClick }) => {
           </button>
 
           {showNotifications && (
-              <div className="notification-dropdown">
+            <div className="notification-dropdown">
               <div className="notification-header">
                 <h3>Notifications</h3>
-                  <div className="notification-actions">
-                    <button className="mark-all-read" onClick={markAllAsRead} disabled={unreadCount===0}>Mark all as read</button>
-                    <button className="mark-all-read" onClick={clearNotifications} disabled={!notifications.length}>Clear</button>
-                    <button className={`mark-all-read ${dnd?'active':''}`} onClick={() => setDnd(!dnd)}>{dnd ? 'DND On' : 'DND Off'}</button>
-                    <button className="mark-all-read" onClick={requestDesktopPermission}>Desktop</button>
-                  </div>
+                <div className="notification-actions">
+                  <button 
+                    className="mark-all-read" 
+                    onClick={() => {
+                      try {
+                        markAllAsRead();
+                      } catch (error) {
+                        console.error('Error marking all as read:', error);
+                      }
+                    }} 
+                    disabled={unreadCount === 0}
+                  >
+                    Mark all as read
+                  </button>
+                  <button 
+                    className="mark-all-read" 
+                    onClick={() => {
+                      try {
+                        clearNotifications();
+                      } catch (error) {
+                        console.error('Error clearing notifications:', error);
+                      }
+                    }} 
+                    disabled={!notifications || !notifications.length}
+                  >
+                    Clear
+                  </button>
+                  <button 
+                    className={`mark-all-read ${dnd ? 'active' : ''}`} 
+                    onClick={() => {
+                      try {
+                        setDnd(!dnd);
+                      } catch (error) {
+                        console.error('Error toggling DND:', error);
+                      }
+                    }}
+                  >
+                    {dnd ? 'DND On' : 'DND Off'}
+                  </button>
+                  <button 
+                    className="mark-all-read" 
+                    onClick={() => {
+                      try {
+                        requestDesktopPermission();
+                      } catch (error) {
+                        console.error('Error requesting desktop permission:', error);
+                      }
+                    }}
+                  >
+                    Desktop
+                  </button>
+                </div>
               </div>
               <div className="notification-list">
-                {notifications.length > 0 ? (
-                  notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`notification-item ${
-                        !notification.read ? "unread" : ""
-                      }`}
-                      onClick={() => markAsRead(notification.id)}
-                    >
-                      <div className="notification-icon">
-                        {notification.icon}
-                      </div>
-                      <div className="notification-content">
-                        <p className="notification-message">
-                          {notification.message}
-                        </p>
-                        <span className="notification-time">
-                          {new Date(
-                            notification.timestamp
-                          ).toLocaleTimeString()}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="no-notifications">No notifications</p>
-                )}
+                {renderNotifications()}
               </div>
             </div>
           )}
