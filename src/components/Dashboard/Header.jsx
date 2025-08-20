@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { HiMenuAlt2 } from "react-icons/hi";
 import { IoNotificationsOutline } from "react-icons/io5";
@@ -21,6 +21,25 @@ const Header = ({ onMenuClick }) => {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
   const navigate = useNavigate();
+  const notificationRef = useRef(null);
+  const userMenuRef = useRef(null);
+
+  // Click outside handlers
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -70,7 +89,7 @@ const Header = ({ onMenuClick }) => {
           {theme ? <BsSun size={20} /> : <BsMoon size={20} />}
         </button>
 
-        <div className="notification-wrapper">
+        <div className="notification-wrapper" ref={notificationRef}>
           <button
             className="notification-btn"
             onClick={() => setShowNotifications(!showNotifications)}
@@ -125,7 +144,7 @@ const Header = ({ onMenuClick }) => {
           )}
         </div>
 
-        <div className="user-menu-container">
+        <div className="user-menu-container" ref={userMenuRef}>
           <button
             className="user-button"
             onClick={() => setShowUserMenu(!showUserMenu)}
