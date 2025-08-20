@@ -68,7 +68,6 @@ const Header = ({ onMenuClick }) => {
   // Handle notification toggle with error handling
   const handleNotificationToggle = () => {
     try {
-      console.log('Toggling notifications, current state:', showNotifications);
       setShowNotifications(!showNotifications);
     } catch (error) {
       console.error('Error toggling notifications:', error);
@@ -79,19 +78,14 @@ const Header = ({ onMenuClick }) => {
   // Safe notification rendering with fallback
   const renderNotifications = () => {
     try {
-      console.log('Rendering notifications:', notifications);
-      
       if (!notifications || !Array.isArray(notifications)) {
-        console.log('Notifications is not an array, showing fallback');
         return <p className="no-notifications">No notifications</p>;
       }
 
       if (notifications.length === 0) {
-        console.log('Notifications array is empty');
         return <p className="no-notifications">No notifications</p>;
       }
 
-      console.log('Rendering', notifications.length, 'notifications');
       return notifications.map((notification, index) => (
         <div
           key={notification.id || `notification-${index}`}
@@ -129,16 +123,6 @@ const Header = ({ onMenuClick }) => {
       return <p className="no-notifications">Error loading notifications</p>;
     }
   };
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Header component state:', {
-      showNotifications,
-      notificationsCount: notifications?.length || 0,
-      unreadCount,
-      user: user?.email
-    });
-  }, [showNotifications, notifications, unreadCount, user]);
 
   return (
     <header className="dashboard-header">
