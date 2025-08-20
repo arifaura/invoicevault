@@ -100,6 +100,8 @@
 
 .notification-wrapper {
     position: relative;
+    /* Ensure wrapper is visible */
+    display: block;
 }
 
 .notification-btn {
@@ -109,6 +111,8 @@
     color: var(--text-primary);
     cursor: pointer;
     padding: 0.5rem;
+    /* Ensure button is clickable */
+    z-index: 1;
 }
 
 .notification-badge {
@@ -143,6 +147,11 @@
     display: flex;
     flex-direction: column;
     margin-top: 8px;
+    /* Ensure visibility */
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.2s ease;
 }
 
 .notification-header {
@@ -153,6 +162,9 @@
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
     background-color: var(--bg-primary);
+    /* Ensure header is visible */
+    position: relative;
+    z-index: 1;
 }
 
 .notification-header h3 {
@@ -160,12 +172,17 @@
     font-size: 1rem;
     font-weight: 600;
     color: var(--text-primary);
+    /* Ensure text is visible */
+    display: block;
 }
 
 .notification-actions {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+    /* Ensure actions are visible */
+    position: relative;
+    z-index: 1;
 }
 
 .mark-all-read {
@@ -178,6 +195,9 @@
     border-radius: 4px;
     transition: all 0.2s ease;
     white-space: nowrap;
+    /* Ensure buttons are clickable */
+    position: relative;
+    z-index: 1;
 }
 
 .mark-all-read:hover:not(:disabled) {
@@ -200,6 +220,9 @@
     overflow-y: auto;
     flex: 1;
     background-color: var(--bg-primary);
+    /* Ensure list is visible */
+    position: relative;
+    z-index: 1;
 }
 
 .no-notifications {
@@ -208,6 +231,8 @@
     color: var(--text-secondary);
     font-size: 0.875rem;
     margin: 0;
+    /* Ensure message is visible */
+    display: block;
 }
 
 .notification-item {
@@ -218,6 +243,9 @@
     transition: background-color 0.2s;
     border-bottom: 1px solid var(--border-color);
     background-color: var(--bg-primary);
+    /* Ensure items are visible */
+    position: relative;
+    z-index: 1;
 }
 
 .notification-item.unread {
@@ -241,11 +269,17 @@
     width: 24px;
     height: 24px;
     font-size: 16px;
+    /* Ensure icon is visible */
+    position: relative;
+    z-index: 1;
 }
 
 .notification-content {
     flex: 1;
     min-width: 0;
+    /* Ensure content is visible */
+    position: relative;
+    z-index: 1;
 }
 
 .notification-message {
@@ -254,6 +288,8 @@
     font-size: 0.875rem;
     line-height: 1.4;
     word-wrap: break-word;
+    /* Ensure message is visible */
+    display: block;
 }
 
 .notification-time {
@@ -261,6 +297,9 @@
     font-size: 0.75rem;
     display: block;
     margin-top: 0.25rem;
+    /* Ensure time is visible */
+    position: relative;
+    z-index: 1;
 }
 
 .user-menu-container {
@@ -379,6 +418,7 @@
     background-color: var(--bg-secondary);
 }
 
+/* Mobile specific fixes */
 @media (max-width: 768px) {
     .dashboard-header {
         padding: 0 16px;
@@ -423,6 +463,9 @@
         max-width: none;
         max-height: calc(100vh - 80px);
         transform: none;
+        /* Ensure mobile dropdown is visible */
+        visibility: visible;
+        opacity: 1;
     }
 
     .notification-actions {
@@ -442,6 +485,9 @@
         left: 8px;
         right: 8px;
         top: 60px;
+        /* Ensure small screen dropdown is visible */
+        visibility: visible;
+        opacity: 1;
     }
 
     .notification-header {

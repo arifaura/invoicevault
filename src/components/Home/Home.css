@@ -817,6 +817,7 @@ p {
   }
 }
 
+/* Mobile Responsive Improvements */
 @media (max-width: 768px) {
   .container {
     padding: 0 16px;
@@ -837,6 +838,7 @@ p {
     flex-direction: column;
     gap: 16px;
     border-bottom: 1px solid var(--border-light);
+    box-shadow: var(--shadow-md);
   }
   
   .nav-links.active {
@@ -845,40 +847,232 @@ p {
 
   .hero {
     padding: 80px 16px 40px;
+    text-align: center;
+  }
+  
+  .hero-content {
+    max-width: 100%;
+  }
+  
+  .hero h1 {
+    font-size: clamp(2rem, 6vw, 2.5rem);
+    line-height: 1.2;
+  }
+  
+  .hero-subtitle {
+    font-size: 1rem;
+    line-height: 1.5;
   }
   
   .hero-actions {
     flex-direction: column;
     align-items: center;
+    gap: 16px;
+  }
+  
+  .hero-actions .btn-primary,
+  .hero-actions .btn-secondary {
+    width: 100%;
+    max-width: 280px;
+    padding: 16px 24px;
+    font-size: 1rem;
   }
   
   .hero-stats {
     justify-content: center;
     gap: 24px;
+    flex-wrap: wrap;
+  }
+  
+  .hero-stats .stat {
+    min-width: 120px;
+  }
+  
+  .hero-visual {
+    height: 300px;
+    margin-top: 40px;
+  }
+  
+  .floating-card {
+    min-width: 140px;
+    padding: 12px;
+    font-size: 0.875rem;
   }
   
   .features, .social-proof, .cta {
-    padding: 15px 0;
+    padding: 40px 0;
+  }
+  
+  .features-head {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+  
+  .features-head h2 {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+  }
+  
+  .feature-items {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .feature-item {
+    padding: 24px;
+    text-align: center;
+  }
+  
+  .workflow-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .step-card {
+    padding: 20px;
+  }
+  
+  .why-v2-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .why-card {
+    padding: 20px;
+    text-align: center;
+  }
+  
+  .cta-inner {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  
+  .cta h2 {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+  }
+  
+  .cta-actions {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .cta-actions .btn-primary {
+    width: 100%;
+    max-width: 280px;
+    padding: 16px 24px;
+    font-size: 1rem;
   }
   
   .cta-benefits {
     flex-direction: column;
     align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  
+  .cta-benefits span {
+    font-size: 0.875rem;
+  }
+  
+  .pricing-stats {
+    padding: 40px 0;
+  }
+  
+  .pricing-stats .mission {
+    padding: 0 16px;
+  }
+  
+  .pricing-stats .mission h2 {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+  }
+  
+  .stats-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 0 16px;
+  }
+  
+  .stat-block .num {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+  }
+  
+  .plans {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 0 16px;
+  }
+  
+  .plan {
+    padding: 20px;
+    min-height: 120px;
+  }
+  
+  .plan .title {
+    font-size: 1.5rem;
+  }
+  
+  /* Footer Mobile Improvements */
+  .home-footer {
+    padding: 40px 0 20px;
+  }
+  
+  .footer-content {
+    flex-direction: column;
+    gap: 30px;
+    text-align: center;
+  }
+  
+  .footer-brand {
+    text-align: center;
+  }
+  
+  .footer-brand p {
+    margin-top: 12px;
+    font-size: 0.875rem;
   }
   
   .footer-links {
     flex-direction: column;
-    gap: 15px;
+    gap: 30px;
+    width: 100%;
+  }
+  
+  .footer-section {
+    text-align: center;
+  }
+  
+  .footer-section h4 {
+    margin-bottom: 16px;
+    font-size: 1rem;
+  }
+  
+  .footer-section a {
+    display: block;
+    padding: 8px 0;
+    font-size: 0.875rem;
   }
   
   .footer-bottom {
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-light);
   }
-
+  
+  .footer-bottom p {
+    font-size: 0.875rem;
+  }
+  
   .footer-legal {
     justify-content: center;
+    gap: 20px;
+  }
+  
+  .footer-legal a {
+    font-size: 0.875rem;
   }
 }
 
@@ -887,18 +1081,82 @@ p {
     padding: 60px 16px 30px;
   }
   
+  .hero h1 {
+    font-size: 1.75rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 0.875rem;
+  }
+  
   .floating-card {
-    min-width: 140px;
-    padding: 12px;
+    min-width: 120px;
+    padding: 10px;
+    font-size: 0.75rem;
   }
   
   .card-icon {
-    font-size: 1.25rem;
-    width: 32px;
-    height: 32px;
+    font-size: 1rem;
+    width: 28px;
+    height: 28px;
   }
   
   .features-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .stats-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .stat-block .num {
+    font-size: 1.5rem;
+  }
+  
+  .stat-block .label {
+    font-size: 0.875rem;
+  }
+  
+  .plan {
+    padding: 16px;
+    min-height: 100px;
+  }
+  
+  .plan .title {
+    font-size: 1.25rem;
+  }
+  
+  .footer-content {
+    gap: 24px;
+  }
+  
+  .footer-links {
+    gap: 24px;
+  }
+  
+  .footer-section h4 {
+    font-size: 0.875rem;
+  }
+  
+  .footer-section a {
+    font-size: 0.8rem;
+    padding: 6px 0;
+  }
+  
+  .footer-bottom {
+    gap: 12px;
+  }
+  
+  .footer-bottom p {
+    font-size: 0.8rem;
+  }
+  
+  .footer-legal {
+    gap: 16px;
+  }
+  
+  .footer-legal a {
+    font-size: 0.8rem;
   }
 }
