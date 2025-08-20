@@ -1,25 +1,33 @@
 {
   "short_name": "InvoiceVault",
   "name": "InvoiceVault - Invoice Management",
+  "description": "Professional invoice management and task tracking app",
   "icons": [
     {
-      "src": "logo.jpg",
+      "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/jpg"
+      "type": "image/x-icon"
     },
     {
-      "src": "logo.jpg",
-      "type": "image/jpg",
-      "sizes": "192x192"
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
-      "src": "logo.jpg",
-      "type": "image/jpg",
-      "sizes": "512x512"
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "theme_color": "#6366f1",
-  "background_color": "#ffffff"
+  "background_color": "#ffffff",
+  "scope": "/",
+  "categories": ["business", "productivity", "finance"],
+  "lang": "en",
+  "dir": "ltr"
 }

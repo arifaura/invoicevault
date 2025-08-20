@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
+import MobileNav from '../MobileNav/MobileNav';
 import './DashboardLayout.css';
 import { useAuth } from '../../context/AuthContext';
 import { ProfileProvider } from '../../context/ProfileContext';
@@ -32,6 +33,7 @@ const DashboardLayout = () => {
             <Footer />
           </main>
         </div>
+        <MobileNav />
       </div>
     </ProfileProvider>
   );
