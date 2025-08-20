@@ -68,6 +68,7 @@ const Header = ({ onMenuClick }) => {
   // Handle notification toggle with error handling
   const handleNotificationToggle = () => {
     try {
+      console.log('Toggling notifications, current state:', showNotifications);
       setShowNotifications(!showNotifications);
     } catch (error) {
       console.error('Error toggling notifications:', error);
@@ -78,17 +79,22 @@ const Header = ({ onMenuClick }) => {
   // Safe notification rendering with fallback
   const renderNotifications = () => {
     try {
+      console.log('Rendering notifications:', notifications);
+      
       if (!notifications || !Array.isArray(notifications)) {
+        console.log('Notifications is not an array, showing fallback');
         return <p className="no-notifications">No notifications</p>;
       }
 
       if (notifications.length === 0) {
+        console.log('Notifications array is empty');
         return <p className="no-notifications">No notifications</p>;
       }
 
-      return notifications.map((notification) => (
+      console.log('Rendering', notifications.length, 'notifications');
+      return notifications.map((notification, index) => (
         <div
-          key={notification.id || Math.random()}
+          key={notification.id || `notification-${index}`}
           className={`notification-item ${
             !notification.read ? "unread" : ""
           }`}
@@ -124,6 +130,16 @@ const Header = ({ onMenuClick }) => {
     }
   };
 
+  // Debug logging
+  useEffect(() => {
+    console.log('Header component state:', {
+      showNotifications,
+      notificationsCount: notifications?.length || 0,
+      unreadCount,
+      user: user?.email
+    });
+  }, [showNotifications, notifications, unreadCount, user]);
+
   return (
     <header className="dashboard-header">
       <div className="header-left">
@@ -153,6 +169,7 @@ const Header = ({ onMenuClick }) => {
             className="notification-btn"
             onClick={handleNotificationToggle}
             aria-label="Toggle notifications"
+            type="button"
           >
             <IoNotificationsOutline size={20} />
             {unreadCount > 0 && (
@@ -161,7 +178,7 @@ const Header = ({ onMenuClick }) => {
           </button>
 
           {showNotifications && (
-            <div className="notification-dropdown">
+            <div className="notification-dropdown" role="dialog" aria-label="Notifications">
               <div className="notification-header">
                 <h3>Notifications</h3>
                 <div className="notification-actions">
@@ -175,6 +192,7 @@ const Header = ({ onMenuClick }) => {
                       }
                     }} 
                     disabled={unreadCount === 0}
+                    type="button"
                   >
                     Mark all as read
                   </button>
@@ -188,6 +206,7 @@ const Header = ({ onMenuClick }) => {
                       }
                     }} 
                     disabled={!notifications || !notifications.length}
+                    type="button"
                   >
                     Clear
                   </button>
@@ -200,6 +219,7 @@ const Header = ({ onMenuClick }) => {
                         console.error('Error toggling DND:', error);
                       }
                     }}
+                    type="button"
                   >
                     {dnd ? 'DND On' : 'DND Off'}
                   </button>
@@ -212,6 +232,7 @@ const Header = ({ onMenuClick }) => {
                         console.error('Error requesting desktop permission:', error);
                       }
                     }}
+                    type="button"
                   >
                     Desktop
                   </button>
@@ -230,6 +251,7 @@ const Header = ({ onMenuClick }) => {
             onClick={() => setShowUserMenu(!showUserMenu)}
             aria-expanded={showUserMenu}
             aria-haspopup="true"
+            type="button"
           >
             <div className="user-avatar">
               {avatarUrl ? (
@@ -259,6 +281,7 @@ const Header = ({ onMenuClick }) => {
               <button 
                 className="user-menu-item text-danger"
                 onClick={handleSignOut}
+                type="button"
               >
                 <RiLogoutBoxLine size={18} />
                 Sign Out
