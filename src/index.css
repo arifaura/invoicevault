@@ -39,16 +39,7 @@ code {
     min-width: 44px;
   }
   
-  /* Better mobile navigation */
-  .mobile-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    border-top: 1px solid #e5e7eb;
-    z-index: 1000;
-  }
+  /* Mobile navigation is now handled by MobileNav component */
   
   /* Mobile-friendly tables */
   .mobile-table {

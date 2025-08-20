@@ -7,6 +7,7 @@ import {
   FaTasks, 
   FaCog 
 } from 'react-icons/fa';
+import './MobileNav.css';
 
 const MobileNav = () => {
   const location = useLocation();
@@ -21,23 +22,24 @@ const MobileNav = () => {
 
   return (
     <nav className="mobile-nav md:hidden">
-      <div className="flex justify-around items-center py-2">
+      <div className="mobile-nav-container">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || 
+                          (item.path === '/dashboard' && location.pathname === '/dashboard');
           
           return (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center p-2 rounded-lg transition-colors ${
-                isActive 
-                  ? 'text-indigo-600 bg-indigo-50' 
-                  : 'text-gray-600 hover:text-indigo-600'
-              }`}
+              className={`mobile-nav-item ${isActive ? 'active' : ''}`}
+              aria-label={item.label}
             >
-              <Icon className="text-xl mb-1" />
-              <span className="text-xs font-medium">{item.label}</span>
+              <div className="mobile-nav-icon">
+                <Icon className="nav-icon" />
+                {isActive && <div className="active-indicator" />}
+              </div>
+              <span className="mobile-nav-label">{item.label}</span>
             </Link>
           );
         })}

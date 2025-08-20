@@ -54,9 +54,33 @@
 @media (max-width: 768px) {
     .main-content {
         margin-left: 0;
+        height: calc(100vh - 60px - 80px); /* Subtract header and mobile nav height */
+        padding-bottom: 80px; /* Add padding for mobile nav */
     }
     
     .content-wrapper {
         padding: 1rem;
+        padding-bottom: 2rem; /* Extra padding for mobile footer */
+    }
+
+    /* Ensure footer doesn't overlap with mobile nav */
+    .dashboard-footer {
+        margin-bottom: 80px;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        height: calc(100vh - 60px - 70px); /* Smaller mobile nav height */
+        padding-bottom: 70px;
+    }
+    
+    .content-wrapper {
+        padding: 0.75rem;
+        padding-bottom: 1.5rem;
+    }
+
+    .dashboard-footer {
+        margin-bottom: 70px;
     }
 } 

@@ -14,7 +14,7 @@ import "./Header.css";
 
 const Header = ({ onMenuClick }) => {
   const { theme, toggleTheme } = useTheme();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications, dnd, setDnd, requestDesktopPermission } =
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications, dnd, setDnd, requestDesktopPermission, addNotification } =
     useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -68,6 +68,9 @@ const Header = ({ onMenuClick }) => {
   // Handle notification toggle with error handling
   const handleNotificationToggle = () => {
     try {
+      console.log('Toggling notifications. Current state:', showNotifications);
+      console.log('Notifications data:', notifications);
+      console.log('Unread count:', unreadCount);
       setShowNotifications(!showNotifications);
     } catch (error) {
       console.error('Error toggling notifications:', error);
@@ -78,12 +81,25 @@ const Header = ({ onMenuClick }) => {
   // Safe notification rendering with fallback
   const renderNotifications = () => {
     try {
+      console.log('Notifications data:', notifications); // Debug log
+      
       if (!notifications || !Array.isArray(notifications)) {
-        return <p className="no-notifications">No notifications</p>;
+        console.log('Notifications is not an array:', notifications);
+        return (
+          <div className="no-notifications">
+            <p>No notifications available</p>
+            <small>You're all caught up!</small>
+          </div>
+        );
       }
 
       if (notifications.length === 0) {
-        return <p className="no-notifications">No notifications</p>;
+        return (
+          <div className="no-notifications">
+            <p>No notifications</p>
+            <small>You're all caught up!</small>
+          </div>
+        );
       }
 
       return notifications.map((notification, index) => (
@@ -120,7 +136,12 @@ const Header = ({ onMenuClick }) => {
       ));
     } catch (error) {
       console.error('Error rendering notifications:', error);
-      return <p className="no-notifications">Error loading notifications</p>;
+      return (
+        <div className="no-notifications">
+          <p>Error loading notifications</p>
+          <small>Please try refreshing the page</small>
+        </div>
+      );
     }
   };
 
@@ -159,6 +180,24 @@ const Header = ({ onMenuClick }) => {
             {unreadCount > 0 && (
               <span className="notification-badge">{unreadCount}</span>
             )}
+          </button>
+          
+          {/* Test notification button - remove in production */}
+          <button
+            className="test-notification-btn"
+            onClick={() => {
+              addNotification({
+                title: 'Test Notification',
+                message: 'This is a test notification to verify the system is working!',
+                icon: '🧪',
+                type: 'info'
+              });
+            }}
+            aria-label="Add test notification"
+            type="button"
+            title="Add test notification"
+          >
+            +
           </button>
 
           {showNotifications && (

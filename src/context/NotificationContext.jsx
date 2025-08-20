@@ -14,10 +14,64 @@ export const NotificationProvider = ({ children }) => {
       const saved = JSON.parse(localStorage.getItem('iv_notifications') || '[]');
       const savedUnread = Number(localStorage.getItem('iv_notifications_unread') || 0);
       const savedDnd = JSON.parse(localStorage.getItem('iv_notifications_dnd') || 'false');
-      setNotifications(saved);
-      setUnreadCount(savedUnread);
+      
+      // If no notifications exist, add some sample notifications
+      if (saved.length === 0) {
+        const sampleNotifications = [
+          {
+            id: Date.now() - 300000, // 5 minutes ago
+            timestamp: new Date(Date.now() - 300000).toISOString(),
+            read: false,
+            type: 'info',
+            icon: '🎉',
+            message: 'Welcome to Invoice Vault! Your account has been successfully created.',
+            title: 'Welcome!'
+          },
+          {
+            id: Date.now() - 600000, // 10 minutes ago
+            timestamp: new Date(Date.now() - 600000).toISOString(),
+            read: false,
+            type: 'success',
+            icon: '✅',
+            message: 'Your first invoice has been created successfully.',
+            title: 'Invoice Created'
+          },
+          {
+            id: Date.now() - 900000, // 15 minutes ago
+            timestamp: new Date(Date.now() - 900000).toISOString(),
+            read: true,
+            type: 'info',
+            icon: '📊',
+            message: 'Monthly analytics report is now available.',
+            title: 'Analytics Ready'
+          }
+        ];
+        setNotifications(sampleNotifications);
+        setUnreadCount(2); // 2 unread notifications
+        localStorage.setItem('iv_notifications', JSON.stringify(sampleNotifications));
+        localStorage.setItem('iv_notifications_unread', '2');
+      } else {
+        setNotifications(saved);
+        setUnreadCount(savedUnread);
+      }
       setDnd(!!savedDnd);
-    } catch {}
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+      // Fallback to sample notifications if there's an error
+      const fallbackNotifications = [
+        {
+          id: Date.now(),
+          timestamp: new Date().toISOString(),
+          read: false,
+          type: 'info',
+          icon: '🎉',
+          message: 'Welcome to Invoice Vault!',
+          title: 'Welcome!'
+        }
+      ];
+      setNotifications(fallbackNotifications);
+      setUnreadCount(1);
+    }
   }, []);
 
   // Persist
