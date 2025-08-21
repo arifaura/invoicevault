@@ -1,3 +1,4 @@
+/* Dashboard Footer */
 .dashboard-footer {
     padding: 0.75rem 1.5rem;
     background-color: var(--bg-primary);
@@ -228,10 +229,12 @@
         justify-content: center;
     }
 
+    /* Hide link grid on small screens to keep footer compact */
     .footer-links-mobile {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-        text-align: center;
+        display: none;
+        margin: 0;
+        padding: 0;
+        border: 0;
     }
 
     .footer-links-column {
@@ -266,8 +269,8 @@
         font-size: 1rem;
     }
 
+    /* Keep links hidden on very small screens as well */
     .footer-links-mobile {
-        gap: 1rem;
-        padding: 1rem 0;
+        display: none;
     }
-} 
+}
