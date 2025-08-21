@@ -97,17 +97,23 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.3s ease, color 0.3s ease;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
 }
 
 .home-container {
   min-height: 100vh;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;
+  width: 100%;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -272,8 +278,8 @@ p {
   grid-template-columns: 1fr 1fr;
   gap: 60px;
   align-items: center;
-  min-height: 100vh;
-  padding: 100px 24px 60px;
+  min-height: calc(100vh - 80px);
+  padding: 120px 24px 80px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -647,6 +653,8 @@ p {
   padding: 28px 0 16px;
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-light);
+  margin-top: auto;
+  width: 100%;
 }
 
 .footer-content {
@@ -726,6 +734,7 @@ p {
 .eyebrow, .label { text-transform: uppercase; letter-spacing: .12em; font-size: 12px; color: #0ea5a0; font-weight: 700; }
 
 /* Features v2 */
+.features-v2 { padding: 60px 0; }
 .features-v2 .features-head { display:grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items:flex-end; padding: 24px 0; }
 .features-v2 .features-head h2 { font-size: clamp(1.8rem, 3.6vw, 2.4rem); }
 .features-v2 .head-right { color: var(--text-secondary); }
@@ -737,6 +746,7 @@ p {
 @media (max-width: 900px) { .features-v2 .features-head { grid-template-columns: 1fr; } .feature-items { flex-direction: column; } }
 
 /* Why v2 */
+.why-v2 { padding: 60px 0; }
 .why-v2 .section-header .label { color:#0ea5a0; }
 .why-v2-grid { display:grid; grid-template-columns: repeat(2, minmax(260px,1fr)); gap: 20px; }
 .why-card { background: var(--bg-secondary); border:1px solid var(--border-light); border-radius: 16px; padding: 18px; transition: var(--transition); }
@@ -846,8 +856,12 @@ p {
   }
 
   .hero {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 40px;
     padding: 80px 16px 40px;
     text-align: center;
+    min-height: auto;
   }
   
   .hero-content {
@@ -899,7 +913,7 @@ p {
     font-size: 0.875rem;
   }
   
-  .features, .social-proof, .cta {
+  .features, .social-proof, .cta, .features-v2, .why-v2, .workflow, .pricing-stats {
     padding: 40px 0;
   }
   
@@ -1078,7 +1092,12 @@ p {
 
 @media (max-width: 480px) {
   .hero {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
     padding: 60px 16px 30px;
+    text-align: center;
+    min-height: auto;
   }
   
   .hero h1 {
