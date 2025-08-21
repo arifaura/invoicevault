@@ -60,12 +60,17 @@
     
     .content-wrapper {
         padding: 1rem;
-        padding-bottom: 2rem; /* Extra padding for mobile footer */
+        padding-bottom: 3rem; /* Increased padding for mobile footer */
     }
 
     /* Ensure footer doesn't overlap with mobile nav */
     .dashboard-footer {
-        margin-bottom: 80px;
+        margin-bottom: 100px; /* Increased margin to create more space */
+    }
+    
+    /* Additional spacing for the last element in content */
+    .content-wrapper > *:last-child {
+        margin-bottom: 2rem; /* Extra space before mobile nav */
     }
 }
 
@@ -77,10 +82,15 @@
     
     .content-wrapper {
         padding: 0.75rem;
-        padding-bottom: 1.5rem;
+        padding-bottom: 2.5rem; /* Increased padding for mobile footer */
     }
 
     .dashboard-footer {
-        margin-bottom: 70px;
+        margin-bottom: 90px; /* Increased margin to create more space */
+    }
+    
+    /* Additional spacing for the last element in content */
+    .content-wrapper > *:last-child {
+        margin-bottom: 1.5rem; /* Extra space before mobile nav */
     }
 } 
