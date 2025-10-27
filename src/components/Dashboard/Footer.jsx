@@ -9,8 +9,8 @@ const Footer = () => {
   return (
     <footer className="dashboard-footer">
       <div className="footer-content">
-        {/* Mobile Footer - Shows only on mobile */}
-        <div className="mobile-footer md:hidden">
+        {/* Mobile Footer - compact version */}
+        <div className="mobile-footer">
           <div className="mobile-footer-section">
             <div className="footer-brand">
               <h3 className="footer-title">Invoice Vault</h3>
@@ -32,27 +32,6 @@ const Footer = () => {
             </div>
           </div>
           
-          <div className="footer-links-mobile">
-            <div className="footer-links-column">
-              <h4 className="footer-links-title">Product</h4>
-              <Link to="/features" className="footer-link-mobile">Features</Link>
-              <Link to="/pricing" className="footer-link-mobile">Pricing</Link>
-              <Link to="/integrations" className="footer-link-mobile">Integrations</Link>
-            </div>
-            <div className="footer-links-column">
-              <h4 className="footer-links-title">Support</h4>
-              <Link to="/help" className="footer-link-mobile">Help Center</Link>
-              <Link to="/contact" className="footer-link-mobile">Contact Us</Link>
-              <Link to="/status" className="footer-link-mobile">Status</Link>
-            </div>
-            <div className="footer-links-column">
-              <h4 className="footer-links-title">Company</h4>
-              <Link to="/about" className="footer-link-mobile">About</Link>
-              <Link to="/privacy" className="footer-link-mobile">Privacy</Link>
-              <Link to="/terms" className="footer-link-mobile">Terms</Link>
-            </div>
-          </div>
-          
           <div className="footer-bottom-mobile">
             <p className="copyright-mobile">
               © {currentYear} Invoice Vault. Made with <FaHeart className="heart-icon" /> for businesses.
@@ -60,8 +39,8 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Desktop Footer - Hidden on mobile */}
-        <div className="desktop-footer hidden md:flex">
+        {/* Desktop Footer */}
+        <div className="desktop-footer">
           <div className="footer-left">
             <p className="copyright">
               © {currentYear} Invoice Vault. All rights reserved.

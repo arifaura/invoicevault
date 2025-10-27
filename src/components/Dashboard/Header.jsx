@@ -181,24 +181,6 @@ const Header = ({ onMenuClick }) => {
               <span className="notification-badge">{unreadCount}</span>
             )}
           </button>
-          
-          {/* Test notification button - remove in production */}
-          <button
-            className="test-notification-btn"
-            onClick={() => {
-              addNotification({
-                title: 'Test Notification',
-                message: 'This is a test notification to verify the system is working!',
-                icon: '🧪',
-                type: 'info'
-              });
-            }}
-            aria-label="Add test notification"
-            type="button"
-            title="Add test notification"
-          >
-            +
-          </button>
 
           {showNotifications && (
             <div className="notification-dropdown" role="dialog" aria-label="Notifications">
