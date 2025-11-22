@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { HiMenuAlt2 } from "react-icons/hi";
 import { IoNotificationsOutline } from "react-icons/io5";
-import { RiUserLine, RiLogoutBoxLine } from "react-icons/ri";
+import { RiUserLine, RiLogoutBoxLine, RiFileListLine } from "react-icons/ri";
 import { BsSun, BsMoon } from "react-icons/bs";
+import { FiX, FiTrash2, FiDownload, FiAlertTriangle, FiCamera, FiSave, FiLock } from "react-icons/fi";
 import { useTheme } from "../../context/ThemeContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { useAuth } from '../../context/AuthContext';
@@ -11,6 +12,31 @@ import { useProfile } from '../../context/ProfileContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import "./Header.css";
+
+const getNotificationIcon = (iconName) => {
+  switch (iconName) {
+    case 'invoice-success':
+    case 'success':
+      return <RiFileListLine size={16} />;
+    case 'invoice-error':
+    case 'error':
+      return <FiX size={16} />;
+    case 'trash':
+      return <FiTrash2 size={16} />;
+    case 'download':
+      return <FiDownload size={16} />;
+    case 'warning':
+      return <FiAlertTriangle size={16} />;
+    case 'camera':
+      return <FiCamera size={16} />;
+    case 'save':
+      return <FiSave size={16} />;
+    case 'lock':
+      return <FiLock size={16} />;
+    default:
+      return '📢';
+  }
+};
 
 const Header = ({ onMenuClick }) => {
   const { theme, toggleTheme } = useTheme();
@@ -118,7 +144,7 @@ const Header = ({ onMenuClick }) => {
           }}
         >
           <div className="notification-icon">
-            {notification.icon || '📢'}
+            {getNotificationIcon(notification.icon)}
           </div>
           <div className="notification-content">
             <p className="notification-message">

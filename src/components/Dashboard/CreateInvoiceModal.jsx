@@ -191,68 +191,29 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
           .eq('id', initialData.id);
 
         if (error) throw error;
-        toast.success('Invoice updated successfully! 🎉', {
-          duration: 4000,
-          icon: '✅'
-        });
-        addNotification({
-          type: 'success',
-          message: `Invoice "${formData.title}" updated successfully`,
-          icon: <RiFileListLine size={16} />
-        });
       } else {
         // Create new invoice
+        console.log('Creating new invoice...');
         const { error } = await supabase
           .from('invoices')
-          .insert([{
-            ...invoiceData,
-            created_by: user.id,
-            created_at: new Date().toISOString(),
-            invoice_number: `INV-${Date.now()}`
-          }]);
+          .insert([invoiceData]);
 
         if (error) throw error;
-        toast.success('Invoice created successfully! 🎉', {
-          duration: 4000,
-          icon: '✅'
-        });
-        addNotification({
-          type: 'success',
-          message: `Invoice "${formData.title}" created successfully`,
-          icon: <RiFileListLine size={16} />
-        });
-
-        // Reset form data after successful creation
-        setFormData({
-          title: '',
-          invoice_number: '',
-          vendor_name: '',
-          amount: '',
-          currency: 'INR',
-          purchase_date: '',
-          payment_mode: '',
-          status: 'paid',
-          category: '',
-          warranty_period: '',
-          notes: '',
-          attachments: []
-        });
-        setFiles({ mainImage: null });
       }
 
+      addNotification({
+        type: 'success',
+        message: initialData ? `Invoice "${formData.title}" updated successfully` : `Invoice "${formData.title}" created successfully`,
+        icon: 'invoice-success'
+      });
+
       onClose();
-      // Trigger a refresh of the invoices list
-      window.dispatchEvent(new Event('refresh-invoices'));
     } catch (error) {
       console.error('Error saving invoice:', error);
-      toast.error(error.message || 'Failed to save invoice', {
-        duration: 4000,
-        icon: '❌'
-      });
       addNotification({
         type: 'error',
         message: error.message || 'Failed to save invoice',
-        icon: <FiX size={16} />
+        icon: 'invoice-error'
       });
     } finally {
       setLoading(false);
@@ -281,7 +242,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
                   <div className="preview-image">
                     {typeof files.mainImage === 'string' && files.mainImage.toLowerCase().endsWith('.pdf') ? (
                       <div className="pdf-preview">
-                        <embed 
+                        <embed
                           src={files.mainImage}
                           type="application/pdf"
                           width="100%"
@@ -289,27 +250,27 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
                         />
                       </div>
                     ) : typeof files.mainImage === 'string' ? (
-                      <img 
+                      <img
                         src={files.mainImage}
-                        alt="Preview" 
+                        alt="Preview"
                       />
                     ) : files.mainImage instanceof File && files.mainImage.type === 'application/pdf' ? (
                       <div className="pdf-preview">
-                        <embed 
-                          src={URL.createObjectURL(files.mainImage)} 
+                        <embed
+                          src={URL.createObjectURL(files.mainImage)}
                           type="application/pdf"
                           width="100%"
                           height="300px"
                         />
                       </div>
                     ) : (
-                      <img 
-                        src={URL.createObjectURL(files.mainImage)} 
-                        alt="Preview" 
+                      <img
+                        src={URL.createObjectURL(files.mainImage)}
+                        alt="Preview"
                       />
                     )}
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setFiles(prev => ({ ...prev, mainImage: null }))}
                       className="remove-image"
                     >
@@ -529,4 +490,4 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
   );
 };
 
-export default CreateInvoiceModal; 
+export default CreateInvoiceModal;
