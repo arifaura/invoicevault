@@ -82,7 +82,7 @@ const Header = ({ onMenuClick }) => {
   const renderNotifications = () => {
     try {
       console.log('Notifications data:', notifications); // Debug log
-      
+
       if (!notifications || !Array.isArray(notifications)) {
         console.log('Notifications is not an array:', notifications);
         return (
@@ -105,9 +105,8 @@ const Header = ({ onMenuClick }) => {
       return notifications.map((notification, index) => (
         <div
           key={notification.id || `notification-${index}`}
-          className={`notification-item ${
-            !notification.read ? "unread" : ""
-          }`}
+          className={`notification-item ${!notification.read ? "unread" : ""
+            }`}
           onClick={() => {
             try {
               if (notification.id) {
@@ -126,8 +125,8 @@ const Header = ({ onMenuClick }) => {
               {notification.message || 'Notification'}
             </p>
             <span className="notification-time">
-              {notification.timestamp ? 
-                new Date(notification.timestamp).toLocaleTimeString() : 
+              {notification.timestamp ?
+                new Date(notification.timestamp).toLocaleTimeString() :
                 'Just now'
               }
             </span>
@@ -181,60 +180,44 @@ const Header = ({ onMenuClick }) => {
               <span className="notification-badge">{unreadCount}</span>
             )}
           </button>
-          
-          {/* Test notification button - remove in production */}
-          <button
-            className="test-notification-btn"
-            onClick={() => {
-              addNotification({
-                title: 'Test Notification',
-                message: 'This is a test notification to verify the system is working!',
-                icon: '🧪',
-                type: 'info'
-              });
-            }}
-            aria-label="Add test notification"
-            type="button"
-            title="Add test notification"
-          >
-            +
-          </button>
+
+
 
           {showNotifications && (
             <div className="notification-dropdown" role="dialog" aria-label="Notifications">
               <div className="notification-header">
                 <h3>Notifications</h3>
                 <div className="notification-actions">
-                  <button 
-                    className="mark-all-read" 
+                  <button
+                    className="mark-all-read"
                     onClick={() => {
                       try {
                         markAllAsRead();
                       } catch (error) {
                         console.error('Error marking all as read:', error);
                       }
-                    }} 
+                    }}
                     disabled={unreadCount === 0}
                     type="button"
                   >
                     Mark all as read
                   </button>
-                  <button 
-                    className="mark-all-read" 
+                  <button
+                    className="mark-all-read"
                     onClick={() => {
                       try {
                         clearNotifications();
                       } catch (error) {
                         console.error('Error clearing notifications:', error);
                       }
-                    }} 
+                    }}
                     disabled={!notifications || !notifications.length}
                     type="button"
                   >
                     Clear
                   </button>
-                  <button 
-                    className={`mark-all-read ${dnd ? 'active' : ''}`} 
+                  <button
+                    className={`mark-all-read ${dnd ? 'active' : ''}`}
                     onClick={() => {
                       try {
                         setDnd(!dnd);
@@ -246,8 +229,8 @@ const Header = ({ onMenuClick }) => {
                   >
                     {dnd ? 'DND On' : 'DND Off'}
                   </button>
-                  <button 
-                    className="mark-all-read" 
+                  <button
+                    className="mark-all-read"
                     onClick={() => {
                       try {
                         requestDesktopPermission();
@@ -278,9 +261,9 @@ const Header = ({ onMenuClick }) => {
           >
             <div className="user-avatar">
               {avatarUrl ? (
-                <img 
-                  src={avatarUrl} 
-                  alt="Profile" 
+                <img
+                  src={avatarUrl}
+                  alt="Profile"
                   className="profile-image"
                   onError={(e) => {
                     e.target.onerror = null;
@@ -301,7 +284,7 @@ const Header = ({ onMenuClick }) => {
                 Profile
               </Link>
               <div className="menu-divider"></div>
-              <button 
+              <button
                 className="user-menu-item text-danger"
                 onClick={handleSignOut}
                 type="button"
