@@ -12,7 +12,7 @@ function uid() {
 export default function KanbanBoard() {
   const { isDarkMode } = useTheme();
   const { user } = useAuth();
-  
+
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [realtimeStatus, setRealtimeStatus] = useState('connecting');
@@ -29,7 +29,7 @@ export default function KanbanBoard() {
   const [deleteAlert, setDeleteAlert] = useState({ show: false, taskId: null });
   const [clearAllAlert, setClearAllAlert] = useState(false);
   const [editAlert, setEditAlert] = useState({ show: false, task: null, title: "", description: "", priority: "medium", status: "pending" });
-  
+
   const dragItem = useRef(null);
   const dragNode = useRef(null);
   const confettiRootRef = useRef(null);
@@ -150,11 +150,11 @@ export default function KanbanBoard() {
         },
         (payload) => {
           console.log('Real-time change:', payload);
-          
+
           if (payload.eventType === 'INSERT') {
             setTasks(prev => [payload.new, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
-            setTasks(prev => prev.map(task => 
+            setTasks(prev => prev.map(task =>
               task.id === payload.new.id ? payload.new : task
             ));
           } else if (payload.eventType === 'DELETE') {
@@ -182,9 +182,9 @@ export default function KanbanBoard() {
   function runConfetti(count = 100) {
     const root = confettiRootRef.current;
     if (!root) return;
-    
+
     const colors = [
-      "#ef4444", "#f59e0b", "#10b981", "#3b82f6", 
+      "#ef4444", "#f59e0b", "#10b981", "#3b82f6",
       "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"
     ];
     const shapes = ["circle", "square", "triangle"];
@@ -197,7 +197,7 @@ export default function KanbanBoard() {
       const delay = (Math.random() * 0.8).toFixed(2);
       const rotation = Math.round(Math.random() * 720);
       const shape = shapes[Math.floor(Math.random() * shapes.length)];
-      
+
       el.style.position = "absolute";
       el.style.left = `${left}%`;
       el.style.top = `-20px`;
@@ -211,7 +211,7 @@ export default function KanbanBoard() {
       el.style.zIndex = 9999;
       el.style.willChange = "transform, top, opacity";
       el.style.animation = `confettiFall ${2.5 + Math.random() * 1.5}s ${delay}s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`;
-      el.style.boxShadow = `0 0 ${size/2}px ${colors[Math.floor(Math.random() * colors.length)]}40`;
+      el.style.boxShadow = `0 0 ${size / 2}px ${colors[Math.floor(Math.random() * colors.length)]}40`;
 
       if (shape === "triangle") {
         el.style.clipPath = "polygon(50% 0%, 0% 100%, 100% 100%)";
@@ -232,16 +232,16 @@ export default function KanbanBoard() {
     const title = formData.title.trim();
     const description = formData.description.trim();
     if (!title || !user) return;
-    
+
     setIsAddingTask(true);
-    
+
     const newTask = {
       title,
       description,
       priority: formData.priority,
       status: formData.status
     };
-    
+
     const addedTask = await addTaskToDatabase(newTask);
     if (addedTask) {
       setFormData({
@@ -250,7 +250,7 @@ export default function KanbanBoard() {
         priority: "medium",
         status: "pending"
       });
-      
+
       // Add animation effect
       if (formRef.current) {
         formRef.current.classList.add('task-added');
@@ -259,19 +259,19 @@ export default function KanbanBoard() {
         }, 1000);
       }
     }
-    
+
     setIsAddingTask(false);
   }
 
   async function toggleDone(id) {
     if (!user) return;
-    
+
     const task = tasks.find(t => t.id === id);
     if (!task) return;
 
     const updates = { done: !task.done };
     const updatedTask = await updateTaskInDatabase(id, updates);
-    
+
     if (updatedTask && updatedTask.done) {
       runConfetti(150);
     }
@@ -279,7 +279,7 @@ export default function KanbanBoard() {
 
   async function removeTask(id) {
     if (!user) return;
-    
+
     const success = await deleteTaskFromDatabase(id);
     if (success) {
       setTasks(prev => prev.filter(t => t.id !== id));
@@ -289,7 +289,7 @@ export default function KanbanBoard() {
   function editTask(id) {
     const task = tasks.find((t) => t.id === id);
     if (!task) return;
-    
+
     setEditAlert({
       show: true,
       task,
@@ -303,14 +303,14 @@ export default function KanbanBoard() {
   const handleEditConfirm = async () => {
     const { task, title, description, priority, status } = editAlert;
     if (title.trim() === "" || !user) return;
-    
+
     const updates = {
       title: title.trim(),
       description: description.trim(),
       priority: priority,
       status: status
     };
-    
+
     const updatedTask = await updateTaskInDatabase(task.id, updates);
     if (updatedTask) {
       setEditAlert({ show: false, task: null, title: "", description: "", priority: "medium", status: "pending" });
@@ -324,7 +324,7 @@ export default function KanbanBoard() {
 
   const handleClearAllConfirm = async () => {
     if (!user) return;
-    
+
     // Delete all tasks for the user
     const { error } = await supabase
       .from('tasks')
@@ -373,7 +373,7 @@ export default function KanbanBoard() {
 
   async function markAllDone() {
     if (!user) return;
-    
+
     // Update all tasks to done
     const { error } = await supabase
       .from('tasks')
@@ -391,6 +391,8 @@ export default function KanbanBoard() {
   }
 
   const remaining = tasks.filter((t) => !t.done).length;
+  const completed = tasks.filter((t) => t.done).length;
+  const completionRate = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -431,16 +433,9 @@ export default function KanbanBoard() {
   // Show loading state
   if (loading) {
     return (
-      <div className={`kanban-loading ${isDarkMode ? 'dark' : 'light'}`}>
-        <div className="loading-content">
-          <div className="loading-spinner">
-            <div className="spinner-ring"></div>
-            <div className="spinner-ring"></div>
-            <div className="spinner-ring"></div>
-          </div>
-          <h2>Loading TaskVault Pro...</h2>
-          <p>Preparing your workspace</p>
-        </div>
+      <div className={`bento-loading ${isDarkMode ? 'dark' : 'light'}`}>
+        <div className="loading-spinner"></div>
+        <h2>Loading your tasks...</h2>
       </div>
     );
   }
@@ -448,323 +443,207 @@ export default function KanbanBoard() {
   // Show login prompt if no user
   if (!user) {
     return (
-      <div className={`kanban-auth ${isDarkMode ? 'dark' : 'light'}`}>
-        <div className="auth-content">
-          <div className="auth-icon">🔒</div>
-          <h2>Authentication Required</h2>
-          <p>Please log in to access your tasks</p>
-        </div>
+      <div className={`bento-auth ${isDarkMode ? 'dark' : 'light'}`}>
+        <div className="auth-icon">🔒</div>
+        <h2>Please log in to access your tasks</h2>
       </div>
     );
   }
 
   return (
-    <div className={`kanban-container ${isDarkMode ? 'dark' : 'light'}`}>
-      <div className="kanban-layout">
-        {/* Main Task Panel */}
-        <div className="task-panel">
-          {/* Header */}
-          <div className="panel-header">
-            <div className="header-content">
-              <div className="logo-section">
-                <div className="logo-icon">
-                  <span className="logo-emoji">⚡</span>
-                </div>
-                <div className="logo-text">
-                  <h1>TaskVault Pro</h1>
-                  <p>Smart task management with real-time sync</p>
-                </div>
-              </div>
-              
-              <div className="header-stats">
-                <div className="task-counter">
-                  <span className="counter-number">{tasks.length}</span>
-                  <span className="counter-label">Tasks</span>
-                </div>
-                
-                <div className={`connection-status ${realtimeStatus}`}>
-                  <div className="status-dot"></div>
-                  <span>{realtimeStatus}</span>
-                </div>
+    <div className={`bento-container ${isDarkMode ? 'dark' : 'light'}`}>
+      {/* Bento Grid */}
+      <div className="bento-grid">
+        {/* Header Card */}
+        <div className="bento-card header-card">
+          <div className="header-content">
+            <div className="header-left">
+              <div className="logo-badge">⚡</div>
+              <div>
+                <h1>Tasks</h1>
+                <p>Organize your work efficiently</p>
               </div>
             </div>
-          </div>
-
-          {/* Add Task Form */}
-          <form ref={formRef} className="add-task-form" onSubmit={addTask}>
-            <div className="form-grid">
-              <div className="form-row">
-                <input
-                  className="task-input"
-                  placeholder="What needs to be done?"
-                  value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
-                  aria-label="Task title"
-                />
-                <select
-                  className="task-select priority-select"
-                  value={formData.priority}
-                  onChange={(e) => setFormData({...formData, priority: e.target.value})}
-                  aria-label="Priority"
-                >
-                  <option value="low">🌱 Low</option>
-                  <option value="medium">⚡ Medium</option>
-                  <option value="high">🔥 High</option>
-                </select>
+            <div className="header-right">
+              <div className="quick-stat">
+                <span className="stat-value">{tasks.length}</span>
+                <span className="stat-label">Total</span>
               </div>
-              
-              <div className="form-row">
-                <input
-                  className="task-input"
-                  placeholder="Add description (optional)"
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  aria-label="Task description"
-                />
-                <select
-                  className="task-select status-select"
-                  value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value})}
-                  aria-label="Status"
-                >
-                  <option value="pending">⏳ Pending</option>
-                  <option value="in-progress">🔄 In Progress</option>
-                  <option value="completed">✅ Completed</option>
-                </select>
+              <div className={`status-indicator ${realtimeStatus}`}>
+                <div className="status-dot"></div>
+                <span>{realtimeStatus}</span>
               </div>
-            </div>
-            
-            <button 
-              className={`add-task-btn ${isAddingTask ? 'adding' : ''}`} 
-              type="submit"
-              disabled={isAddingTask}
-            >
-              {isAddingTask ? (
-                <>
-                  <span className="btn-spinner"></span>
-                  Adding...
-                </>
-              ) : (
-                <>
-                  <span className="btn-icon">+</span>
-                  Add Task
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Task List */}
-          <div className="task-list" role="list">
-            {tasks.length === 0 && (
-              <div className="empty-state">
-                <div className="empty-icon">✨</div>
-                <h3>No tasks yet</h3>
-                <p>Add your first task to get started</p>
-              </div>
-            )}
-
-            {tasks.map((task, idx) => (
-              <div
-                key={task.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, idx)}
-                onDragOver={handleDragOver}
-                onDragEnter={(e) => handleDragEnter(e, idx)}
-                onDragEnd={handleDragEnd}
-                className={`task-item ${task.done ? 'completed' : ''}`}
-                role="listitem"
-                aria-label={task.title}
-              >
-                <div className="task-drag-handle" title="Drag to reorder">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 12h18M3 6h18M3 18h18" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-
-                <div className="task-content">
-                  <div className="task-header">
-                    <h3 className={`task-title ${task.done ? 'completed' : ''}`}>
-                      {task.title}
-                    </h3>
-                  </div>
-                  
-                  {task.description && (
-                    <p className={`task-description ${task.done ? 'completed' : ''}`}>
-                      {task.description}
-                    </p>
-                  )}
-                  
-                  <div className="task-badges">
-                    <span 
-                      className={`priority-badge priority-${task.priority}`}
-                      style={{ 
-                        backgroundColor: getPriorityColor(task.priority) + '20', 
-                        color: getPriorityColor(task.priority) 
-                      }}
-                    >
-                      <span className="badge-icon priority-icon">{getPriorityIcon(task.priority)}</span>
-                      <span className="badge-text">{task.priority.toUpperCase()}</span>
-                    </span>
-                    <span 
-                      className={`status-badge status-${task.status}`}
-                      style={{ 
-                        backgroundColor: getStatusColor(task.status) + '20', 
-                        color: getStatusColor(task.status) 
-                      }}
-                    >
-                      <span className="badge-icon status-icon">{getStatusIcon(task.status)}</span>
-                      <span className="badge-text">{task.status.replace('-', ' ').toUpperCase()}</span>
-                    </span>
-                  </div>
-                  
-                  <div className="task-meta">
-                    <span className="task-status">
-                      {task.done ? '✅ Completed' : '⏳ Pending'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="task-actions">
-                  <button 
-                    className="action-btn complete-btn" 
-                    type="button" 
-                    onClick={() => toggleDone(task.id)} 
-                    title={task.done ? "Mark incomplete" : "Mark complete"}
-                  >
-                    {task.done ? (
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    ) : (
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="9" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
-                  </button>
-
-                  <button 
-                    className="action-btn edit-btn" 
-                    type="button" 
-                    onClick={() => editTask(task.id)} 
-                    title="Edit task"
-                  >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 20h9"/>
-                      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-
-                  <button 
-                    className="action-btn delete-btn" 
-                    type="button" 
-                    onClick={() => setDeleteAlert({ show: true, taskId: task.id })} 
-                    title="Delete task"
-                  >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="3 6 5 6 21 6"/>
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {/* Footer Actions */}
-          <div className="task-footer">
-            <div className="footer-stats">
-              <span className="remaining-count">{remaining} remaining</span>
-            </div>
-            <div className="footer-actions">
-              <button 
-                className="footer-btn mark-all-btn" 
-                type="button" 
-                onClick={markAllDone} 
-                title="Mark all tasks as done"
-              >
-                <span className="btn-icon">✅</span>
-                Mark All Done
-              </button>
-              <button 
-                className="footer-btn clear-all-btn" 
-                type="button" 
-                onClick={clearAll} 
-                title="Clear all tasks"
-              >
-                <span className="btn-icon">🗑️</span>
-                Clear All
-              </button>
             </div>
           </div>
         </div>
 
-        {/* Sidebar */}
-        <aside className="sidebar-panel">
-          <div className="sidebar-content">
-            <div className="sidebar-section">
-              <h3>📊 Overview</h3>
-              <p>Quick stats and insights</p>
-
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="stat-number">{tasks.length}</div>
-                  <div className="stat-label">Total Tasks</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-number">{tasks.filter(t => t.done).length}</div>
-                  <div className="stat-label">Completed</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-number">{remaining}</div>
-                  <div className="stat-label">Pending</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-number">
-                    {tasks.length > 0 ? Math.round((tasks.filter(t => t.done).length / tasks.length) * 100) : 0}%
-                  </div>
-                  <div className="stat-label">Progress</div>
-                </div>
-              </div>
+        {/* Add Task Card */}
+        <div className="bento-card add-task-card">
+          <h3>Add New Task</h3>
+          <form ref={formRef} onSubmit={addTask} className="task-form">
+            <input
+              type="text"
+              placeholder="Task title..."
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="input-field"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Description (optional)"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="input-field"
+            />
+            <div className="form-row">
+              <select
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                className="select-field"
+              >
+                <option value="low">🌱 Low</option>
+                <option value="medium">⚡ Medium</option>
+                <option value="high">🔥 High</option>
+              </select>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="select-field"
+              >
+                <option value="pending">⏳ Pending</option>
+                <option value="in-progress">🔄 In Progress</option>
+                <option value="completed">✅ Completed</option>
+              </select>
             </div>
+            <button type="submit" className="btn-add" disabled={isAddingTask}>
+              {isAddingTask ? 'Adding...' : '+ Add Task'}
+            </button>
+          </form>
+        </div>
 
-            <div className="sidebar-section">
-              <h4>🎯 Priority Distribution</h4>
-              <div className="priority-stats">
-                <div className="priority-item high">
-                  <span className="priority-icon">🔥</span>
-                  <span className="priority-label">High</span>
-                  <span className="priority-count">{tasks.filter(t => t.priority === 'high').length}</span>
-                </div>
-                <div className="priority-item medium">
-                  <span className="priority-icon">⚡</span>
-                  <span className="priority-label">Medium</span>
-                  <span className="priority-count">{tasks.filter(t => t.priority === 'medium').length}</span>
-                </div>
-                <div className="priority-item low">
-                  <span className="priority-icon">🌱</span>
-                  <span className="priority-label">Low</span>
-                  <span className="priority-count">{tasks.filter(t => t.priority === 'low').length}</span>
-                </div>
-              </div>
+        {/* Quick Stats Card */}
+        <div className="bento-card stats-card">
+          <h3>Quick Stats</h3>
+          <div className="stats-grid">
+            <div className="stat-item">
+              <div className="stat-number">{completed}</div>
+              <div className="stat-label">Done</div>
             </div>
-
-            <div className="sidebar-section">
-              <h4>💡 Tips & Tricks</h4>
-              <ul className="tips-list">
-                <li>🎯 Drag tasks to reorder them</li>
-                <li>✨ Complete tasks to trigger confetti</li>
-                <li>✏️ Use the edit button to modify tasks</li>
-                <li>🏷️ Set priorities for better organization</li>
-                <li>🔄 Real-time sync across devices</li>
-              </ul>
+            <div className="stat-item">
+              <div className="stat-number">{remaining}</div>
+              <div className="stat-label">Pending</div>
             </div>
-
-            <div className="sidebar-section">
-              <h4>♿ Accessibility</h4>
-              <p>Keyboard-first interactions available. Use Tab to navigate and Enter/Space to activate buttons.</p>
+            <div className="stat-item completion">
+              <div className="stat-number">{completionRate}%</div>
+              <div className="stat-label">Complete</div>
             </div>
           </div>
-        </aside>
+          <div className="progress-bar">
+            <div className="progress-fill" style={{ width: `${completionRate}%` }}></div>
+          </div>
+        </div>
+
+        {/* Tasks List Card */}
+        <div className="bento-card tasks-card">
+          <div className="tasks-header">
+            <h3>Your Tasks ({tasks.length})</h3>
+            {remaining > 0 && (
+              <span className="pending-badge">{remaining} pending</span>
+            )}
+          </div>
+
+          <div className="tasks-grid">
+            {tasks.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">✨</div>
+                <p>No tasks yet. Add one to get started!</p>
+              </div>
+            ) : (
+              tasks.map((task, idx) => (
+                <div
+                  key={task.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, idx)}
+                  onDragOver={handleDragOver}
+                  onDragEnter={(e) => handleDragEnter(e, idx)}
+                  onDragEnd={handleDragEnd}
+                  className={`task-mini-card ${task.done ? 'completed' : ''}`}
+                >
+                  <div className="task-main">
+                    <button
+                      className="task-checkbox"
+                      onClick={() => toggleDone(task.id)}
+                      type="button"
+                    >
+                      {task.done ? '✓' : ''}
+                    </button>
+                    <div className="task-info">
+                      <h4 className={task.done ? 'done-text' : ''}>{task.title}</h4>
+                      {task.description && (
+                        <p className={task.done ? 'done-text' : ''}>{task.description}</p>
+                      )}
+                      <div className="task-tags">
+                        <span
+                          className="tag priority"
+                          style={{ background: getPriorityColor(task.priority) + '20', color: getPriorityColor(task.priority) }}
+                        >
+                          {getPriorityIcon(task.priority)} {task.priority}
+                        </span>
+                        <span
+                          className="tag status"
+                          style={{ background: getStatusColor(task.status) + '20', color: getStatusColor(task.status) }}
+                        >
+                          {getStatusIcon(task.status)} {task.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="task-actions-mini">
+                    <button onClick={() => editTask(task.id)} className="action-icon edit" type="button">
+                      ✏️
+                    </button>
+                    <button onClick={() => setDeleteAlert({ show: true, taskId: task.id })} className="action-icon delete" type="button">
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Priority Breakdown Card */}
+        <div className="bento-card priority-card">
+          <h3>Priority</h3>
+          <div className="priority-list">
+            <div className="priority-row">
+              <span className="priority-label">🔥 High</span>
+              <span className="priority-count">{tasks.filter(t => t.priority === 'high').length}</span>
+            </div>
+            <div className="priority-row">
+              <span className="priority-label">⚡ Medium</span>
+              <span className="priority-count">{tasks.filter(t => t.priority === 'medium').length}</span>
+            </div>
+            <div className="priority-row">
+              <span className="priority-label">🌱 Low</span>
+              <span className="priority-count">{tasks.filter(t => t.priority === 'low').length}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions Card */}
+        <div className="bento-card actions-card">
+          <h3>Quick Actions</h3>
+          <div className="actions-buttons">
+            <button onClick={markAllDone} className="action-btn primary">
+              ✅ Mark All Done
+            </button>
+            <button onClick={clearAll} className="action-btn danger">
+              🗑️ Clear All
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Confetti Root */}
@@ -798,25 +677,25 @@ export default function KanbanBoard() {
                 className="edit-input"
                 placeholder="Enter task title..."
                 value={editAlert.title}
-                onChange={(e) => setEditAlert({...editAlert, title: e.target.value})}
+                onChange={(e) => setEditAlert({ ...editAlert, title: e.target.value })}
               />
             </div>
             <div className="form-field">
-              <label>Task Description</label>
-              <textarea
-                className="edit-textarea"
-                placeholder="Enter task description..."
+              <label>Description</label>
+              <input
+                className="edit-input"
+                placeholder="Enter description..."
                 value={editAlert.description}
-                onChange={(e) => setEditAlert({...editAlert, description: e.target.value})}
+                onChange={(e) => setEditAlert({ ...editAlert, description: e.target.value })}
               />
             </div>
-            <div className="form-row">
+            <div className="form-row-edit">
               <div className="form-field">
                 <label>Priority</label>
                 <select
                   className="edit-select"
                   value={editAlert.priority}
-                  onChange={(e) => setEditAlert({...editAlert, priority: e.target.value})}
+                  onChange={(e) => setEditAlert({ ...editAlert, priority: e.target.value })}
                 >
                   <option value="low">🌱 Low</option>
                   <option value="medium">⚡ Medium</option>
@@ -828,7 +707,7 @@ export default function KanbanBoard() {
                 <select
                   className="edit-select"
                   value={editAlert.status}
-                  onChange={(e) => setEditAlert({...editAlert, status: e.target.value})}
+                  onChange={(e) => setEditAlert({ ...editAlert, status: e.target.value })}
                 >
                   <option value="pending">⏳ Pending</option>
                   <option value="in-progress">🔄 In Progress</option>

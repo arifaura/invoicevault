@@ -166,6 +166,7 @@ const CreateInvoiceModal = ({ isOpen, onClose, initialData }) => {
 
       // Prepare invoice data
       const invoiceData = {
+        user_id: user.id, // Added user_id to satisfy RLS policy
         title: formData.title,
         vendor_id: vendorId,
         amount: formData.amount,

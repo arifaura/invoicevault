@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiPlus, FiDownload, FiTrash2, FiEdit2, FiEye, FiFilter, FiX, FiAlertTriangle } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiDownload, FiTrash2, FiEdit2, FiEye, FiFilter, FiX } from 'react-icons/fi';
+import { RiFileListLine } from 'react-icons/ri';
 import CreateInvoiceModal from './CreateInvoiceModal';
 import { useNotifications } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 import './Invoices.css';
 import CustomAlert from '../Common/CustomAlert';
-import { generatePDF } from '../../utils/pdfGenerator';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../utils/supabaseClient';
-import { RiFileListLine } from 'react-icons/ri';
 import Skeleton from '../Common/Skeleton';
 import * as XLSX from 'xlsx';
 
@@ -82,6 +82,7 @@ const TableRowSkeleton = () => (
 
 const Invoices = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState([]);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -104,12 +105,35 @@ const Invoices = () => {
 
   useEffect(() => {
     fetchInvoices();
-  }, []);
+
+    if (!user) return;
+
+    // Real-time subscription for invoices
+    const subscription = supabase
+      .channel('public:invoices')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'invoices',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Real-time invoice update:', payload);
+          fetchInvoices();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [user]);
 
   const fetchInvoices = async () => {
     setLoading(true);
     try {
-      // console.log('Fetching invoices...');
       const { data, error } = await supabase
         .from('invoices')
         .select(`
@@ -118,30 +142,11 @@ const Invoices = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        // console.error('Supabase query error:', error);
-        throw error;
-      }
-
-      // console.log('Raw database response:', data);
-      
-      // if (Array.isArray(data)) {
-      //   // console.log('Number of invoices:', data.length);
-      //   data.forEach(invoice => {
-      //     console.log('Invoice details:', {
-      //       id: invoice.id,
-      //       title: invoice.title,
-      //       status: invoice.status,
-      //       vendor: invoice.vendor
-      //     });
-      //   });
-      // } else {
-        // console.log('Data is not an array:', typeof data);
-      // }
+      if (error) throw error;
 
       setInvoices(data);
     } catch (error) {
-      // console.error('Error fetching invoices:', error);
+      console.error('Error fetching invoices:', error);
       toast.error('Failed to load invoices');
     } finally {
       setLoading(false);
@@ -166,7 +171,7 @@ const Invoices = () => {
 
   const handleSelect = (invoiceId) => {
     if (!invoiceId) return;
-    
+
     setSelectedInvoices(prev => {
       if (prev.includes(invoiceId)) {
         return prev.filter(id => id !== invoiceId);
@@ -202,11 +207,10 @@ const Invoices = () => {
       toast.error('Invalid invoice');
       return;
     }
-    
+
     try {
       toast.loading('Deleting invoice...', { id: 'deleteInvoice' });
-      
-      // Delete the invoice
+
       const { error } = await supabase
         .from('invoices')
         .delete()
@@ -214,20 +218,18 @@ const Invoices = () => {
 
       if (error) throw error;
 
-      // Update local state
       setInvoices(prev => prev.filter(inv => inv.id !== invoice.id));
-      
+
       toast.success('Invoice deleted successfully!', { id: 'deleteInvoice' });
       addNotification({
         type: 'success',
         message: `Invoice ${invoice.id} deleted successfully`,
         icon: <FiTrash2 size={16} />
       });
-      
-      // Close the alert
+
       setDeleteAlert({ show: false, invoice: null });
     } catch (error) {
-      // console.error('Error deleting invoice:', error);
+      console.error('Error deleting invoice:', error);
       toast.error('Failed to delete invoice: ' + error.message, { id: 'deleteInvoice' });
     }
   };
@@ -237,7 +239,6 @@ const Invoices = () => {
   };
 
   const handleBulkDownload = () => {
-    // Here you would typically generate and download multiple invoice PDFs
     addNotification({
       type: 'success',
       message: `${selectedInvoices.length} invoices downloaded successfully`,
@@ -248,16 +249,15 @@ const Invoices = () => {
   const handleDownloadInvoice = async (invoice) => {
     if (!invoice?.id) return;
     try {
-      // Navigate to invoice view with download parameter
       const cleanId = getCleanId(invoice.id);
       navigate(`/dashboard/invoice/${cleanId}?download=true`);
-      
+
       toast.success(`Invoice ${invoice.invoice_number} download started`, {
         duration: 4000,
         icon: '📥'
       });
     } catch (error) {
-      // console.error('Error downloading invoice:', error);
+      console.error('Error downloading invoice:', error);
       toast.error('Failed to download invoice. Please try again.', {
         duration: 4000,
         icon: '❌'
@@ -318,101 +318,21 @@ const Invoices = () => {
     XLSX.writeFile(workbook, `invoices_export_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  // Filter invoices based on search and filters
-  const filteredInvoices = useMemo(() => {
-    return invoices.filter(invoice => {
-      // Search filter
-      const searchLower = searchQuery.toLowerCase();
-      const matchesSearch = 
-        invoice.id.toLowerCase().includes(searchLower) ||
-        invoice.title.toLowerCase().includes(searchLower) ||
-        invoice.vendor.name.toLowerCase().includes(searchLower);
-
-      if (!matchesSearch) return false;
-
-      // Status filter
-      if (filters.status && invoice.status !== filters.status) return false;
-
-      // Category filter
-      if (filters.category && invoice.category !== filters.category) return false;
-
-      // Payment mode filter
-      if (filters.paymentMode && invoice.paymentMode !== filters.paymentMode) return false;
-
-      // Date range filter
-      if (filters.dateRange.start && filters.dateRange.end) {
-        const invoiceDate = new Date(invoice.purchaseDate);
-        const startDate = new Date(filters.dateRange.start);
-        const endDate = new Date(filters.dateRange.end);
-        if (invoiceDate < startDate || invoiceDate > endDate) return false;
-      }
-
-      return true;
-    });
-  }, [invoices, searchQuery, filters]);
-
-  const calculateWarrantyDaysLeft = (purchaseDate, warrantyPeriod) => {
-    if (!warrantyPeriod || warrantyPeriod === 'N/A') return null;
-
-    // Convert warranty period to days
-    let warrantyDays = 0;
-    
-    // Handle combined year and month format
-    const years = warrantyPeriod.match(/(\d+)\s*year/);
-    const months = warrantyPeriod.match(/(\d+)\s*month/);
-    
-    if (years) {
-      warrantyDays += parseInt(years[1]) * 365;
-    }
-    if (months) {
-      warrantyDays += parseInt(months[1]) * 30;
-    }
-    
-    // If no valid period found, return null
-    if (warrantyDays === 0) return null;
-
-    const purchaseDateTime = new Date(purchaseDate).getTime();
-    const currentTime = new Date().getTime();
-    const daysLeft = Math.ceil((purchaseDateTime + (warrantyDays * 24 * 60 * 60 * 1000) - currentTime) / (1000 * 60 * 60 * 24));
-    
-    return daysLeft;
-  };
-
-  const getWarrantyStatusClass = (daysLeft) => {
-    if (daysLeft === null || daysLeft <= 30) return 'red';
-    if (daysLeft <= 730) return 'yellow'; // 2 years = 730 days
-    return 'green';
-  };
-
-  // Warranty expiration check
-  useEffect(() => {
-    invoices.forEach(invoice => {
-      const daysLeft = calculateWarrantyDaysLeft(invoice.purchaseDate, invoice.warrantyPeriod);
-      if (daysLeft !== null && daysLeft <= 30 && daysLeft > 0) {
-        addNotification({
-          type: 'warning',
-          message: `Warranty for ${invoice.title} expires in ${daysLeft} days`,
-          icon: <FiAlertTriangle size={16} />
-        });
-      }
-    });
-  }, [invoices]);
-
   const BulkActions = () => {
     const selectedCount = selectedInvoices.length;
-    
+
     if (selectedCount === 0) return null;
-    
+
     return (
       <div className="bulk-actions">
-        <button 
+        <button
           className="bulk-action-btn"
           onClick={handleBulkDownload}
         >
           <FiDownload size={16} />
           Download Selected
         </button>
-        <button 
+        <button
           className="bulk-action-btn delete"
           onClick={handleBulkDelete}
         >
@@ -426,22 +346,49 @@ const Invoices = () => {
     );
   };
 
+  const calculateWarrantyDaysLeft = (purchaseDate, warrantyPeriod) => {
+    if (!warrantyPeriod || warrantyPeriod === 'N/A') return null;
+
+    let warrantyDays = 0;
+    const years = warrantyPeriod.match(/(\d+)\s*year/);
+    const months = warrantyPeriod.match(/(\d+)\s*month/);
+
+    if (years) {
+      warrantyDays += parseInt(years[1]) * 365;
+    }
+    if (months) {
+      warrantyDays += parseInt(months[1]) * 30;
+    }
+
+    if (warrantyDays === 0) return null;
+
+    const purchaseDateTime = new Date(purchaseDate).getTime();
+    const currentTime = new Date().getTime();
+    const daysLeft = Math.ceil((purchaseDateTime + (warrantyDays * 24 * 60 * 60 * 1000) - currentTime) / (1000 * 60 * 60 * 24));
+
+    return daysLeft;
+  };
+
+  const getWarrantyStatusClass = (daysLeft) => {
+    if (daysLeft === null || daysLeft <= 30) return 'red';
+    if (daysLeft <= 730) return 'yellow';
+    return 'green';
+  };
+
   const confirmBulkDelete = async () => {
     try {
       toast.loading('Deleting invoices...', {
         id: 'bulkDeleteProgress'
       });
 
-      // Get clean IDs (remove '#' prefix and filter out invalid IDs)
       const cleanIds = selectedInvoices
-        .filter(id => id) // Remove falsy values
+        .filter(id => id)
         .map(id => getCleanId(id));
 
       if (cleanIds.length === 0) {
         throw new Error('No valid invoices selected');
       }
 
-      // Delete from Supabase
       const { error } = await supabase
         .from('invoices')
         .delete()
@@ -449,18 +396,17 @@ const Invoices = () => {
 
       if (error) throw error;
 
-      // Update local state
-      setInvoices(prevInvoices => 
+      setInvoices(prevInvoices =>
         prevInvoices.filter(inv => !selectedInvoices.includes(inv?.id))
       );
-      setSelectedInvoices([]); // Clear selection
+      setSelectedInvoices([]);
 
       toast.success(`Successfully deleted ${cleanIds.length} invoices! 🗑️`, {
         duration: 4000,
         icon: '✅'
       });
     } catch (error) {
-      // console.error('Error deleting invoices:', error);
+      console.error('Error deleting invoices:', error);
       toast.error('Failed to delete invoices. Please try again.', {
         duration: 4000,
         icon: '❌'
@@ -471,337 +417,270 @@ const Invoices = () => {
     }
   };
 
-  return (
-    <div className="invoices-container p-4">
-      <div className="page-header">
-        <div className="header-content">
-          <div>
-            <h1>Invoices</h1>
-            <p className="text-secondary">Manage and track all your invoices</p>
-          </div>
-          <button 
-            className="create-invoice-btn"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <FiPlus size={20} />
-            Create Invoice
-          </button>
-        </div>
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter(invoice => {
+      const matchesSearch =
+        invoice.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        invoice.vendor?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        invoice.id?.toString().includes(searchQuery);
 
-        <div className="invoice-actions">
-          <div className="search-wrapper">
+      const matchesStatus = !filters.status || invoice.status === filters.status;
+      const matchesCategory = !filters.category || invoice.category === filters.category;
+      const matchesPaymentMode = !filters.paymentMode || invoice.payment_mode === filters.paymentMode;
+
+      let matchesDateRange = true;
+      if (filters.dateRange.start && filters.dateRange.end) {
+        const invoiceDate = new Date(invoice.purchase_date);
+        const startDate = new Date(filters.dateRange.start);
+        const endDate = new Date(filters.dateRange.end);
+        matchesDateRange = invoiceDate >= startDate && invoiceDate <= endDate;
+      }
+
+      return matchesSearch && matchesStatus && matchesCategory && matchesPaymentMode && matchesDateRange;
+    });
+  }, [invoices, searchQuery, filters]);
+
+  return (
+    <div className="invoices-container">
+      <div className="invoices-header">
+        <div className="header-left">
+          <h1>Invoices</h1>
+          <p>Manage and track all your invoices</p>
+        </div>
+        <div className="header-actions">
+          <div className="search-bar">
             <FiSearch className="search-icon" />
-            <input 
-              type="text" 
-              placeholder="Search invoices..." 
-              className="search-input"
+            <input
+              type="text"
+              placeholder="Search invoices..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          
-          <div className="action-buttons">
-            <button 
-              className={`action-btn ${filterOpen ? 'active' : ''}`}
-              onClick={() => setFilterOpen(!filterOpen)}
-            >
-              <FiFilter size={16} />
-              Filter
-            </button>
-            <button 
-              className="action-btn" 
-              disabled={selectedInvoices.length === 0}
-              onClick={handleExport}
-            >
-              <FiDownload size={16} />
-              Export
-            </button>
-            <button 
-              className="action-btn danger" 
-              disabled={selectedInvoices.length === 0}
-              onClick={handleBulkDelete}
-            >
-              <FiTrash2 size={16} />
-              Delete
-            </button>
-          </div>
+          <button
+            className={`filter-btn ${filterOpen ? 'active' : ''}`}
+            onClick={() => setFilterOpen(!filterOpen)}
+          >
+            <FiFilter />
+            Filter
+          </button>
+          <button
+            className="create-btn"
+            onClick={() => {
+              setSelectedInvoice(null);
+              setIsCreateModalOpen(true);
+            }}
+          >
+            <FiPlus />
+            Create Invoice
+          </button>
         </div>
-
-        {filterOpen && (
-          <div className="filter-panel">
-            <div className="filter-header">
-              <h3>Filters</h3>
-              <button className="close-filter" onClick={() => setFilterOpen(false)}>
-                <FiX size={20} />
-              </button>
-            </div>
-            <div className="filter-content">
-              <div className="filter-group">
-                <label>Status</label>
-                <select 
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                >
-                  <option value="">All</option>
-                  <option value="paid">Paid</option>
-                  <option value="pending">Pending</option>
-                  <option value="overdue">Overdue</option>
-                </select>
-              </div>
-              <div className="filter-group">
-                <label>Category</label>
-                <select 
-                  value={filters.category}
-                  onChange={(e) => handleFilterChange('category', e.target.value)}
-                >
-                  <option value="">All</option>
-                  <option value="electronics">Electronics</option>
-                  <option value="groceries">Groceries</option>
-                  <option value="clothing">Clothing</option>
-                  <option value="utilities">Utilities</option>
-                  <option value="entertainment">Entertainment</option>
-                </select>
-              </div>
-              <div className="filter-group">
-                <label>Payment Mode</label>
-                <select 
-                  value={filters.paymentMode}
-                  onChange={(e) => handleFilterChange('paymentMode', e.target.value)}
-                >
-                  <option value="">All</option>
-                  <option value="cash">Cash</option>
-                  <option value="credit_card">Credit Card</option>
-                  <option value="debit_card">Debit Card</option>
-                  <option value="google_pay">Google Pay</option>
-                  <option value="phone_pe">PhonePe</option>
-                  <option value="bank_transfer">Bank Transfer</option>
-                </select>
-              </div>
-              <div className="filter-group">
-                <label>Date Range</label>
-                <div className="date-range">
-                  <input
-                    type="date"
-                    value={filters.dateRange.start}
-                    onChange={(e) => handleDateRangeChange('start', e.target.value)}
-                    max={filters.dateRange.end || undefined}
-                    placeholder="Start Date"
-                  />
-                  <input
-                    type="date"
-                    value={filters.dateRange.end}
-                    onChange={(e) => handleDateRangeChange('end', e.target.value)}
-                    min={filters.dateRange.start || undefined}
-                    placeholder="End Date"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="filter-footer">
-              <button className="reset-btn" onClick={resetFilters}>
-                Reset Filters
-              </button>
-              <button className="apply-btn" onClick={() => setFilterOpen(false)}>
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* No Invoices Message */}
-      {invoices.length === 0 && !loading ? (
-        <div className="no-invoices-container">
-          <div className="empty-state">
-            <RiFileListLine size={64} className="empty-icon" />
-            <h3>No Invoices Found</h3>
-            <p>
-              {searchQuery || Object.values(filters).some(Boolean) 
-                ? "No invoices match your search criteria. Try adjusting your filters."
-                : "Start by creating your first invoice to track your expenses."}
-            </p>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="btn-primary"
+      {filterOpen && (
+        <div className="filters-panel">
+          <div className="filter-group">
+            <label>Status</label>
+            <select
+              value={filters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
             >
-              <FiPlus size={16} className="mr-2" />
-              Create Your First Invoice
-            </button>
+              <option value="">All Status</option>
+              <option value="paid">Paid</option>
+              <option value="pending">Pending</option>
+              <option value="overdue">Overdue</option>
+            </select>
           </div>
-        </div>
-      ) : (
-        <div className="invoices-table-container">
-          <div className="table-wrapper">
-            <table className="invoice-table">
-              <thead>
-                <tr>
-                  <th>
-                    <input
-                      type="checkbox"
-                      onChange={handleSelectAll}
-                      checked={selectedInvoices.length > 0 && selectedInvoices.length === filteredInvoices.length}
-                      className="checkbox"
-                      disabled={loading}
-                    />
-                  </th>
-                  <th>S.No</th>
-                  <th>Title</th>
-                  <th>Vendor</th>
-                  <th>Amount</th>
-                  <th>Category</th>
-                  <th>Payment Mode</th>
-                  <th>Status</th>
-                  <th>Purchase Date</th>
-                  <th>Warranty Period</th>
-                  <th>Days Left</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  // Show multiple skeleton rows while loading
-                  <>
-                    <TableRowSkeleton />
-                    <TableRowSkeleton />
-                    <TableRowSkeleton />
-                    <TableRowSkeleton />
-                    <TableRowSkeleton />
-                    <TableRowSkeleton />
-                  </>
-                ) : (
-                  filteredInvoices.map((invoice, index) => {
-                    const daysLeft = calculateWarrantyDaysLeft(invoice?.purchase_date, invoice?.warranty_period);
-                    const warrantyStatusClass = getWarrantyStatusClass(daysLeft);
-                    
-                    return (
-                      <tr key={invoice?.id || index}>
-                        <td>
-                          <input
-                            type="checkbox"
-                            checked={selectedInvoices.includes(invoice?.id)}
-                            onChange={() => handleSelect(invoice?.id)}
-                            className="checkbox"
-                          />
-                        </td>
-                        <td className="serial-number">{index + 1}</td>
-                        <td className="invoice-title">
-                          <div className="text-truncate">{invoice?.title || 'N/A'}</div>
-                        </td>
-                        <td>{invoice?.vendor?.name || 'N/A'}</td>
-                        <td className="amount">₹{invoice?.amount || '0'}</td>
-                        <td>{invoice?.category || 'N/A'}</td>
-                        <td>{invoice?.payment_mode ? invoice.payment_mode.replace(/_/g, ' ').toUpperCase() : 'N/A'}</td>
-                        <td>
-                          <span className={`status-badge ${invoice?.status || 'paid'}`}>
-                            {invoice?.status ? invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) : 'Paid'}
-                          </span>
-                        </td>
-                        <td>{invoice?.purchase_date ? new Date(invoice.purchase_date).toLocaleDateString('en-IN', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric'
-                        }) : 'N/A'}</td>
-                        <td>{invoice?.warranty_period || 'N/A'}</td>
-                        <td>
-                          <span className={`warranty-status ${getWarrantyStatusClass(daysLeft)}`}>
-                            {daysLeft !== null 
-                              ? daysLeft <= 0 
-                                ? 'Expired'
-                                : `${daysLeft} days` 
-                              : 'N/A'}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="table-actions">
-                            <button 
-                              className="action-icon-btn" 
-                              title="View Invoice"
-                              onClick={() => handleViewInvoice(invoice?.id)}
-                            >
-                              <FiEye size={16} />
-                            </button>
-                            <button 
-                              className="action-icon-btn" 
-                              title="Edit Invoice"
-                              onClick={() => handleEditInvoice(invoice)}
-                            >
-                              <FiEdit2 size={16} />
-                            </button>
-                            <button 
-                              className="action-icon-btn" 
-                              title="Download Invoice"
-                              onClick={() => handleDownloadInvoice(invoice)}
-                            >
-                              <FiDownload size={16} />
-                            </button>
-                            <button 
-                              className="action-icon-btn delete" 
-                              title="Delete Invoice"
-                              onClick={() => handleDeleteInvoice(invoice)}
-                            >
-                              <FiTrash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+          <div className="filter-group">
+            <label>Category</label>
+            <select
+              value={filters.category}
+              onChange={(e) => handleFilterChange('category', e.target.value)}
+            >
+              <option value="">All Categories</option>
+              <option value="electronics">Electronics</option>
+              <option value="software">Software</option>
+              <option value="services">Services</option>
+              <option value="office">Office</option>
+            </select>
           </div>
+          <div className="filter-group">
+            <label>Payment Mode</label>
+            <select
+              value={filters.paymentMode}
+              onChange={(e) => handleFilterChange('paymentMode', e.target.value)}
+            >
+              <option value="">All Modes</option>
+              <option value="credit_card">Credit Card</option>
+              <option value="bank_transfer">Bank Transfer</option>
+              <option value="cash">Cash</option>
+            </select>
+          </div>
+          <div className="filter-group date-range">
+            <label>Date Range</label>
+            <div className="date-inputs">
+              <input
+                type="date"
+                value={filters.dateRange.start}
+                onChange={(e) => handleDateRangeChange('start', e.target.value)}
+              />
+              <span>to</span>
+              <input
+                type="date"
+                value={filters.dateRange.end}
+                onChange={(e) => handleDateRangeChange('end', e.target.value)}
+              />
+            </div>
+          </div>
+          <button className="reset-filters" onClick={resetFilters}>
+            Reset Filters
+          </button>
         </div>
       )}
 
-      <div className="table-footer">
-        <div className="per-page-select">
-          <select defaultValue="10">
-            <option value="10">10 per page</option>
-            <option value="20">20 per page</option>
-            <option value="50">50 per page</option>
-          </select>
-        </div>
-        <div className="pagination">
-          <button className="pagination-btn" disabled>Previous</button>
-          <button className="pagination-btn">Next</button>
-        </div>
-      </div>
-
       <BulkActions />
 
-      <CreateInvoiceModal 
+      <div className="invoices-table-container">
+        <table className="invoices-table">
+          <thead>
+            <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  onChange={handleSelectAll}
+                  checked={filteredInvoices.length > 0 && selectedInvoices.length === filteredInvoices.length}
+                />
+              </th>
+              <th>ID</th>
+              <th>Item/Title</th>
+              <th>Vendor</th>
+              <th>Amount</th>
+              <th>Date</th>
+              <th>Payment Mode</th>
+              <th>Status</th>
+              <th>Category</th>
+              <th>Warranty</th>
+              <th>Days Left</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              [...Array(5)].map((_, index) => (
+                <TableRowSkeleton key={index} />
+              ))
+            ) : filteredInvoices.length === 0 ? (
+              <tr>
+                <td colSpan="12" className="no-data">
+                  <div className="no-data-content">
+                    <RiFileListLine size={48} />
+                    <p>No invoices found</p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              filteredInvoices.map((invoice) => {
+                const daysLeft = calculateWarrantyDaysLeft(invoice.purchase_date, invoice.warranty_period);
+                const warrantyClass = getWarrantyStatusClass(daysLeft);
+
+                return (
+                  <tr key={invoice.id} className={selectedInvoices.includes(invoice.id) ? 'selected' : ''}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedInvoices.includes(invoice.id)}
+                        onChange={() => handleSelect(invoice.id)}
+                      />
+                    </td>
+                    <td className="invoice-id">#{getCleanId(invoice.id).substring(0, 6)}</td>
+                    <td className="invoice-title">{invoice.title}</td>
+                    <td>{invoice.vendor?.name || 'Unknown'}</td>
+                    <td className="amount">
+                      {invoice.currency} {invoice.amount}
+                    </td>
+                    <td>{new Date(invoice.purchase_date).toLocaleDateString()}</td>
+                    <td className="capitalize">{invoice.payment_mode?.replace('_', ' ')}</td>
+                    <td>
+                      <span className={`status-badge ${invoice.status}`}>
+                        {invoice.status}
+                      </span>
+                    </td>
+                    <td className="capitalize">{invoice.category}</td>
+                    <td>{invoice.warranty_period || 'N/A'}</td>
+                    <td>
+                      {daysLeft !== null ? (
+                        <span className={`warranty-days ${warrantyClass}`}>
+                          {daysLeft > 0 ? `${daysLeft} days` : 'Expired'}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button
+                          className="action-btn view"
+                          title="View Details"
+                          onClick={() => handleViewInvoice(invoice.id)}
+                        >
+                          <FiEye />
+                        </button>
+                        <button
+                          className="action-btn edit"
+                          title="Edit"
+                          onClick={() => handleEditInvoice(invoice)}
+                        >
+                          <FiEdit2 />
+                        </button>
+                        <button
+                          className="action-btn download"
+                          title="Download"
+                          onClick={() => handleDownloadInvoice(invoice)}
+                        >
+                          <FiDownload />
+                        </button>
+                        <button
+                          className="action-btn delete"
+                          title="Delete"
+                          onClick={() => handleDeleteInvoice(invoice)}
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <CreateInvoiceModal
         isOpen={isCreateModalOpen}
-        onClose={() => {
-          setIsCreateModalOpen(false);
-          setSelectedInvoice(null);
-          // Refresh the invoices list after closing the modal
-          fetchInvoices();
-        }}
-        mode={selectedInvoice ? 'edit' : 'create'}
+        onClose={() => setIsCreateModalOpen(false)}
         initialData={selectedInvoice}
       />
 
       <CustomAlert
         isOpen={deleteAlert.show}
-        title="Delete Invoice"
-        message={`Are you sure you want to delete invoice "${deleteAlert.invoice?.title}"?`}
-        onConfirm={confirmDelete}
         onClose={() => setDeleteAlert({ show: false, invoice: null })}
+        onConfirm={confirmDelete}
+        title="Delete Invoice"
+        message={`Are you sure you want to delete invoice "${deleteAlert.invoice?.title}"? This action cannot be undone.`}
+        type="danger"
       />
-      
+
       <CustomAlert
         isOpen={bulkDeleteAlert}
-        title="Delete Multiple Invoices"
-        message={`Are you sure you want to delete ${selectedInvoices.length} invoices? This action cannot be undone.`}
-        onConfirm={() => {
-          confirmBulkDelete();
-          // Remove the default confirm
-          return false;
-        }}
         onClose={() => setBulkDeleteAlert(false)}
+        onConfirm={confirmBulkDelete}
+        title="Delete Selected Invoices"
+        message={`Are you sure you want to delete ${selectedInvoices.length} selected invoices? This action cannot be undone.`}
+        type="danger"
       />
     </div>
   );
 };
 
-export default Invoices; 
+export default Invoices;

@@ -89,7 +89,7 @@ export const NotificationProvider = ({ children }) => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('notifications')
         .insert([
           {
@@ -101,10 +101,17 @@ export const NotificationProvider = ({ children }) => {
             read: false,
             created_at: new Date().toISOString()
           }
-        ]);
+        ])
+        .select()
+        .single();
 
       if (error) throw error;
-      // No need to manually update state, subscription will handle it
+
+      // Update state immediately
+      if (data) {
+        setNotifications(prev => [data, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      }
     } catch (error) {
       console.error('Error adding notification:', error);
       toast.error('Failed to add notification');
@@ -127,7 +134,6 @@ export const NotificationProvider = ({ children }) => {
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      // Revert on error would go here, but simple log is fine for now
     }
   };
 
@@ -155,8 +161,6 @@ export const NotificationProvider = ({ children }) => {
     if (!user) return;
 
     try {
-      // Only delete read notifications or all? Usually clear means delete all visible
-      // But let's just delete all for this user for now based on previous implementation
       const { error } = await supabase
         .from('notifications')
         .delete()
