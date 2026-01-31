@@ -11,6 +11,7 @@
     "bootstrap-icons": "^1.11.3",
     "canvas-confetti": "^1.9.3",
     "cra-template": "1.2.0",
+    "framer-motion": "^12.29.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",
     "pdfjs-dist": "^3.11.174",
