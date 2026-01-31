@@ -1,725 +1,564 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useTheme } from '../../context/ThemeContext';
-import CustomAlert from '../Common/CustomAlert';
 import { supabase } from '../../utils/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import './KanbanBoard.css';
 
-function uid() {
-  return Math.random().toString(36).slice(2, 9);
-}
+const Icons = {
+  Plus: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
+  Search: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
+  Filter: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>,
+  MoreHorizontal: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>,
+  Check: () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>,
+  Trash: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
+  Edit: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
+  Calendar: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>,
+  Archive: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+};
 
-export default function KanbanBoard() {
+const COLUMNS = [
+  { id: 'pending', title: 'To Do', color: '#3b82f6' },
+  { id: 'in-progress', title: 'In Progress', color: '#f59e0b' },
+  { id: 'completed', title: 'Done', color: '#10b981' }
+];
+
+const PRIORITIES = [
+  { id: 'low', label: 'Low', color: '#10b981' },
+  { id: 'medium', label: 'Medium', color: '#f59e0b' },
+  { id: 'high', label: 'High', color: '#ef4444' }
+];
+
+export default function ModernKanbanBoard() {
   const { isDarkMode } = useTheme();
   const { user } = useAuth();
-
+  
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [realtimeStatus, setRealtimeStatus] = useState('connecting');
-  const [isAddingTask, setIsAddingTask] = useState(false);
-
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedPriority, setSelectedPriority] = useState('all');
+  const [draggedTask, setDraggedTask] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
+  
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    priority: "medium",
-    status: "pending"
+    title: '',
+    description: '',
+    priority: 'medium',
+    status: 'pending',
+    done: false
   });
 
-  // Alert states
-  const [deleteAlert, setDeleteAlert] = useState({ show: false, taskId: null });
-  const [clearAllAlert, setClearAllAlert] = useState(false);
-  const [editAlert, setEditAlert] = useState({ show: false, task: null, title: "", description: "", priority: "medium", status: "pending" });
+  const boardRef = useRef(null);
 
-  const dragItem = useRef(null);
-  const dragNode = useRef(null);
-  const confettiRootRef = useRef(null);
-  const formRef = useRef(null);
+  // Fetch tasks - removed 'position' from order since column might not exist
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchTasks = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-  // Fetch tasks from Supabase
-  const fetchTasks = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
+        if (error) throw error;
+        setTasks(data || []);
+      } catch (error) {
         console.error('Error fetching tasks:', error);
-        return;
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setTasks(data || []);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-    } finally {
-      setLoading(false);
+    fetchTasks();
+
+    const channel = supabase
+      .channel('tasks_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setTasks(prev => [payload.new, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setTasks(prev => prev.map(t => t.id === payload.new.id ? payload.new : t));
+          } else if (payload.eventType === 'DELETE') {
+            setTasks(prev => prev.filter(t => t.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  // Filter tasks
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          task.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesPriority = selectedPriority === 'all' || task.priority === selectedPriority;
+      return matchesSearch && matchesPriority;
+    });
+  }, [tasks, searchQuery, selectedPriority]);
+
+  const getTasksByColumn = (columnId) => {
+    if (columnId === 'completed') {
+      return filteredTasks.filter(task => task.done === true);
     }
+    return filteredTasks.filter(task => task.status === columnId && !task.done);
   };
 
-  // Add task to database
-  const addTaskToDatabase = async (taskData) => {
+  const addTask = async (e) => {
+    e.preventDefault();
+    if (!formData.title.trim() || !user) return;
+
+    // Only send fields that exist in your database schema
+    const newTask = {
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      priority: formData.priority,
+      status: formData.status,
+      done: false,
+      user_id: user.id,
+      created_at: new Date().toISOString()
+    };
+
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .insert([
-          {
-            ...taskData,
-            user_id: user?.id,
-            done: false,
-            created_at: new Date().toISOString()
-          }
-        ])
+        .insert([newTask])
         .select()
         .single();
-
-      if (error) {
-        console.error('Error adding task:', error);
-        return null;
-      }
-
-      return data;
+      
+      if (error) throw error;
+      
+      setTasks(prev => [data, ...prev]);
+      resetForm();
+      setIsTaskModalOpen(false);
     } catch (error) {
       console.error('Error adding task:', error);
-      return null;
     }
   };
 
-  // Update task in database
-  const updateTaskInDatabase = async (taskId, updates) => {
+  const updateTask = async (taskId, updates) => {
     try {
+      // Filter out fields that don't exist in schema
+      const allowedUpdates = {
+        title: updates.title,
+        description: updates.description,
+        priority: updates.priority,
+        status: updates.status,
+        done: updates.done
+      };
+
       const { data, error } = await supabase
         .from('tasks')
-        .update(updates)
+        .update(allowedUpdates)
         .eq('id', taskId)
-        .eq('user_id', user?.id)
         .select()
         .single();
-
-      if (error) {
-        console.error('Error updating task:', error);
-        return null;
-      }
-
+      
+      if (error) throw error;
+      setTasks(prev => prev.map(t => t.id === taskId ? data : t));
       return data;
     } catch (error) {
       console.error('Error updating task:', error);
-      return null;
     }
   };
 
-  // Delete task from database
-  const deleteTaskFromDatabase = async (taskId) => {
+  const toggleDone = async (task) => {
+    const newDoneState = !task.done;
+    const updates = { 
+      done: newDoneState,
+      status: newDoneState ? 'completed' : 'pending'
+    };
+    await updateTask(task.id, updates);
+  };
+
+  const archiveTask = async (taskId) => {
     try {
       const { error } = await supabase
         .from('tasks')
         .delete()
-        .eq('id', taskId)
-        .eq('user_id', user?.id);
-
-      if (error) {
-        console.error('Error deleting task:', error);
-        return false;
-      }
-
-      return true;
+        .eq('id', taskId);
+      
+      if (error) throw error;
+      setTasks(prev => prev.filter(t => t.id !== taskId));
     } catch (error) {
       console.error('Error deleting task:', error);
-      return false;
     }
   };
 
-  // Set up real-time subscription
-  useEffect(() => {
-    if (!user) return;
-
-    // Fetch initial tasks
-    fetchTasks();
-
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('tasks_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tasks',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Real-time change:', payload);
-
-          if (payload.eventType === 'INSERT') {
-            setTasks(prev => [payload.new, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setTasks(prev => prev.map(task =>
-              task.id === payload.new.id ? payload.new : task
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setTasks(prev => prev.filter(task => task.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('Subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          setRealtimeStatus('connected');
-        } else if (status === 'CHANNEL_ERROR') {
-          setRealtimeStatus('error');
-        } else if (status === 'TIMED_OUT') {
-          setRealtimeStatus('timeout');
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
-
-  // Enhanced confetti with better colors and effects
-  function runConfetti(count = 100) {
-    const root = confettiRootRef.current;
-    if (!root) return;
-
-    const colors = [
-      "#ef4444", "#f59e0b", "#10b981", "#3b82f6",
-      "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"
-    ];
-    const shapes = ["circle", "square", "triangle"];
-    const fragments = [];
-
-    for (let i = 0; i < count; i++) {
-      const el = document.createElement("div");
-      const size = Math.round(8 + Math.random() * 12);
-      const left = Math.round(Math.random() * 100);
-      const delay = (Math.random() * 0.8).toFixed(2);
-      const rotation = Math.round(Math.random() * 720);
-      const shape = shapes[Math.floor(Math.random() * shapes.length)];
-
-      el.style.position = "absolute";
-      el.style.left = `${left}%`;
-      el.style.top = `-20px`;
-      el.style.width = `${size}px`;
-      el.style.height = `${size}px`;
-      el.style.background = colors[Math.floor(Math.random() * colors.length)];
-      el.style.opacity = "0.95";
-      el.style.borderRadius = shape === "circle" ? "50%" : shape === "triangle" ? "0" : "2px";
-      el.style.transform = `rotate(${rotation}deg)`;
-      el.style.pointerEvents = "none";
-      el.style.zIndex = 9999;
-      el.style.willChange = "transform, top, opacity";
-      el.style.animation = `confettiFall ${2.5 + Math.random() * 1.5}s ${delay}s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`;
-      el.style.boxShadow = `0 0 ${size / 2}px ${colors[Math.floor(Math.random() * colors.length)]}40`;
-
-      if (shape === "triangle") {
-        el.style.clipPath = "polygon(50% 0%, 0% 100%, 100% 100%)";
-      }
-
-      root.appendChild(el);
-      fragments.push(el);
-    }
-
-    // cleanup after animation finishes
-    setTimeout(() => {
-      fragments.forEach((f) => f.remove());
-    }, 4000);
-  }
-
-  async function addTask(e) {
-    e.preventDefault();
-    const title = formData.title.trim();
-    const description = formData.description.trim();
-    if (!title || !user) return;
-
-    setIsAddingTask(true);
-
-    const newTask = {
-      title,
-      description,
-      priority: formData.priority,
-      status: formData.status
-    };
-
-    const addedTask = await addTaskToDatabase(newTask);
-    if (addedTask) {
-      setFormData({
-        title: "",
-        description: "",
-        priority: "medium",
-        status: "pending"
-      });
-
-      // Add animation effect
-      if (formRef.current) {
-        formRef.current.classList.add('task-added');
-        setTimeout(() => {
-          formRef.current?.classList.remove('task-added');
-        }, 1000);
-      }
-    }
-
-    setIsAddingTask(false);
-  }
-
-  async function toggleDone(id) {
-    if (!user) return;
-
-    const task = tasks.find(t => t.id === id);
-    if (!task) return;
-
-    const updates = { done: !task.done };
-    const updatedTask = await updateTaskInDatabase(id, updates);
-
-    if (updatedTask && updatedTask.done) {
-      runConfetti(150);
-    }
-  }
-
-  async function removeTask(id) {
-    if (!user) return;
-
-    const success = await deleteTaskFromDatabase(id);
-    if (success) {
-      setTasks(prev => prev.filter(t => t.id !== id));
-    }
-  }
-
-  function editTask(id) {
-    const task = tasks.find((t) => t.id === id);
-    if (!task) return;
-
-    setEditAlert({
-      show: true,
-      task,
-      title: task.title,
-      description: task.description,
-      priority: task.priority,
-      status: task.status
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      description: '',
+      priority: 'medium',
+      status: 'pending',
+      done: false
     });
-  }
+    setEditingTask(null);
+  };
 
-  const handleEditConfirm = async () => {
-    const { task, title, description, priority, status } = editAlert;
-    if (title.trim() === "" || !user) return;
+  // Drag and Drop handlers
+  const handleDragStart = (e, task) => {
+    setDraggedTask(task);
+    e.dataTransfer.effectAllowed = 'move';
+    e.target.style.opacity = '0.5';
+  };
 
-    const updates = {
-      title: title.trim(),
-      description: description.trim(),
-      priority: priority,
-      status: status
-    };
+  const handleDragEnd = (e) => {
+    e.target.style.opacity = '1';
+    setDraggedTask(null);
+    setDragOverColumn(null);
+  };
 
-    const updatedTask = await updateTaskInDatabase(task.id, updates);
-    if (updatedTask) {
-      setEditAlert({ show: false, task: null, title: "", description: "", priority: "medium", status: "pending" });
+  const handleDragOver = (e, columnId) => {
+    e.preventDefault();
+    setDragOverColumn(columnId);
+  };
+
+  const handleDrop = async (e, columnId) => {
+    e.preventDefault();
+    if (!draggedTask) return;
+    
+    const updates = { status: columnId };
+    if (columnId === 'completed') {
+      updates.done = true;
+    } else {
+      updates.done = false;
+    }
+    
+    await updateTask(draggedTask.id, updates);
+    setDragOverColumn(null);
+  };
+
+  const markAllDone = async () => {
+    if (!user) return;
+    const pending = tasks.filter(t => !t.done);
+    for (const task of pending) {
+      await updateTask(task.id, { done: true, status: 'completed' });
     }
   };
 
-  const handleDeleteConfirm = async () => {
-    await removeTask(deleteAlert.taskId);
-    setDeleteAlert({ show: false, taskId: null });
-  };
-
-  const handleClearAllConfirm = async () => {
+  const clearAll = async () => {
     if (!user) return;
-
-    // Delete all tasks for the user
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .eq('user_id', user.id);
-
-    if (!error) {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
       setTasks([]);
-      setClearAllAlert(false);
+    } catch (error) {
+      console.error('Error clearing tasks:', error);
     }
   };
 
-  // Fixed drag and drop functionality
-  const handleDragStart = (e, index) => {
-    dragItem.current = index;
-    dragNode.current = e.currentTarget;
-    dragNode.current.classList.add("dragging");
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/html", e.currentTarget.outerHTML);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDragEnter = (e, index) => {
-    e.preventDefault();
-    if (dragNode.current !== e.currentTarget) {
-      const list = [...tasks];
-      const draggedItem = list[dragItem.current];
-      list.splice(dragItem.current, 1);
-      list.splice(index, 0, draggedItem);
-      dragItem.current = index;
-      setTasks(list);
-    }
-  };
-
-  const handleDragEnd = () => {
-    if (dragNode.current) {
-      dragNode.current.classList.remove("dragging");
-    }
-    dragItem.current = null;
-    dragNode.current = null;
-  };
-
-  async function markAllDone() {
-    if (!user) return;
-
-    // Update all tasks to done
-    const { error } = await supabase
-      .from('tasks')
-      .update({ done: true })
-      .eq('user_id', user.id)
-      .eq('done', false);
-
-    if (!error) {
-      runConfetti(200);
-    }
-  }
-
-  function clearAll() {
-    setClearAllAlert(true);
-  }
-
-  const remaining = tasks.filter((t) => !t.done).length;
-  const completed = tasks.filter((t) => t.done).length;
-  const completionRate = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high': return '#ef4444';
-      case 'medium': return '#f59e0b';
-      case 'low': return '#10b981';
-      default: return '#6b7280';
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return '#f59e0b';
-      case 'in-progress': return '#3b82f6';
-      case 'completed': return '#10b981';
-      default: return '#6b7280';
-    }
-  };
-
-  const getPriorityIcon = (priority) => {
-    switch (priority) {
-      case 'high': return '🔥';
-      case 'medium': return '⚡';
-      case 'low': return '🌱';
-      default: return '📝';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'pending': return '⏳';
-      case 'in-progress': return '🔄';
-      case 'completed': return '✅';
-      default: return '📋';
-    }
-  };
-
-  // Show loading state
   if (loading) {
     return (
-      <div className={`bento-loading ${isDarkMode ? 'dark' : 'light'}`}>
-        <div className="loading-spinner"></div>
-        <h2>Loading your tasks...</h2>
+      <div className={`kanban-loading ${isDarkMode ? 'dark' : 'light'}`}>
+        <div className="spinner"></div>
       </div>
     );
   }
 
-  // Show login prompt if no user
   if (!user) {
     return (
-      <div className={`bento-auth ${isDarkMode ? 'dark' : 'light'}`}>
-        <div className="auth-icon">🔒</div>
-        <h2>Please log in to access your tasks</h2>
+      <div className={`kanban-auth ${isDarkMode ? 'dark' : 'light'}`}>
+        <div className="auth-content">
+          <h2>Please sign in to view your board</h2>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`bento-container ${isDarkMode ? 'dark' : 'light'}`}>
-      {/* Bento Grid */}
-      <div className="bento-grid">
-        {/* Header Card */}
-        <div className="bento-card header-card">
-          <div className="header-content">
-            <div className="header-left">
-              <div className="logo-badge">⚡</div>
-              <div>
-                <h1>Tasks</h1>
-                <p>Organize your work efficiently</p>
-              </div>
-            </div>
-            <div className="header-right">
-              <div className="quick-stat">
-                <span className="stat-value">{tasks.length}</span>
-                <span className="stat-label">Total</span>
-              </div>
-              <div className={`status-indicator ${realtimeStatus}`}>
-                <div className="status-dot"></div>
-                <span>{realtimeStatus}</span>
-              </div>
-            </div>
-          </div>
+    <div className={`kanban-container ${isDarkMode ? 'dark' : 'light'}`}>
+      <header className="kanban-header">
+        <div className="header-left">
+          <h1>Board</h1>
+          <span className="task-count">{filteredTasks.length} tasks</span>
         </div>
+        
+        <div className="header-actions">
+          <div className="search-box">
+            <Icons.Search />
+            <input 
+              type="text" 
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          <button 
+            className={`filter-btn ${isFiltersOpen ? 'active' : ''}`}
+            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+          >
+            <Icons.Filter />
+            <span>Filter</span>
+            {selectedPriority !== 'all' && <span className="filter-badge"></span>}
+          </button>
+          
+          <button 
+            className="add-task-btn"
+            onClick={() => {
+              resetForm();
+              setIsTaskModalOpen(true);
+            }}
+          >
+            <Icons.Plus />
+            <span>New Task</span>
+          </button>
+        </div>
+      </header>
 
-        {/* Add Task Card */}
-        <div className="bento-card add-task-card">
-          <h3>Add New Task</h3>
-          <form ref={formRef} onSubmit={addTask} className="task-form">
-            <input
-              type="text"
-              placeholder="Task title..."
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="input-field"
-              required
-            />
-            <input
-              type="text"
-              placeholder="Description (optional)"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="input-field"
-            />
-            <div className="form-row">
-              <select
-                value={formData.priority}
-                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                className="select-field"
-              >
-                <option value="low">🌱 Low</option>
-                <option value="medium">⚡ Medium</option>
-                <option value="high">🔥 High</option>
-              </select>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="select-field"
-              >
-                <option value="pending">⏳ Pending</option>
-                <option value="in-progress">🔄 In Progress</option>
-                <option value="completed">✅ Completed</option>
-              </select>
-            </div>
-            <button type="submit" className="btn-add" disabled={isAddingTask}>
-              {isAddingTask ? 'Adding...' : '+ Add Task'}
+      {isFiltersOpen && (
+        <div className="filters-bar">
+          <div className="filter-group">
+            <label>Priority</label>
+            <select 
+              value={selectedPriority} 
+              onChange={(e) => setSelectedPriority(e.target.value)}
+            >
+              <option value="all">All Priorities</option>
+              {PRIORITIES.map(p => (
+                <option key={p.id} value={p.id}>{p.label}</option>
+              ))}
+            </select>
+          </div>
+          
+          {selectedPriority !== 'all' && (
+            <button 
+              className="clear-filters"
+              onClick={() => setSelectedPriority('all')}
+            >
+              Clear filters
             </button>
-          </form>
+          )}
         </div>
+      )}
 
-        {/* Quick Stats Card */}
-        <div className="bento-card stats-card">
-          <h3>Quick Stats</h3>
-          <div className="stats-grid">
-            <div className="stat-item">
-              <div className="stat-number">{completed}</div>
-              <div className="stat-label">Done</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-number">{remaining}</div>
-              <div className="stat-label">Pending</div>
-            </div>
-            <div className="stat-item completion">
-              <div className="stat-number">{completionRate}%</div>
-              <div className="stat-label">Complete</div>
-            </div>
-          </div>
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${completionRate}%` }}></div>
-          </div>
-        </div>
-
-        {/* Tasks List Card */}
-        <div className="bento-card tasks-card">
-          <div className="tasks-header">
-            <h3>Your Tasks ({tasks.length})</h3>
-            {remaining > 0 && (
-              <span className="pending-badge">{remaining} pending</span>
-            )}
-          </div>
-
-          <div className="tasks-grid">
-            {tasks.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">✨</div>
-                <p>No tasks yet. Add one to get started!</p>
+      <div className="kanban-board" ref={boardRef}>
+        {COLUMNS.map(column => (
+          <div 
+            key={column.id}
+            className={`kanban-column ${dragOverColumn === column.id ? 'drag-over' : ''}`}
+            onDragOver={(e) => handleDragOver(e, column.id)}
+            onDrop={(e) => handleDrop(e, column.id)}
+          >
+            <div className="column-header" style={{ borderColor: column.color }}>
+              <div className="column-title">
+                <span className="column-dot" style={{ backgroundColor: column.color }}></span>
+                <h3>{column.title}</h3>
+                <span className="column-count">
+                  {getTasksByColumn(column.id).length}
+                </span>
               </div>
-            ) : (
-              tasks.map((task, idx) => (
+              <button 
+                className="column-add"
+                onClick={() => {
+                  resetForm();
+                  setFormData(prev => ({ ...prev, status: column.id }));
+                  setIsTaskModalOpen(true);
+                }}
+              >
+                <Icons.Plus />
+              </button>
+            </div>
+
+            <div className="column-tasks">
+              {getTasksByColumn(column.id).map((task) => (
                 <div
                   key={task.id}
+                  className={`task-card ${task.priority} ${task.done ? 'completed' : ''}`}
                   draggable
-                  onDragStart={(e) => handleDragStart(e, idx)}
-                  onDragOver={handleDragOver}
-                  onDragEnter={(e) => handleDragEnter(e, idx)}
+                  onDragStart={(e) => handleDragStart(e, task)}
                   onDragEnd={handleDragEnd}
-                  className={`task-mini-card ${task.done ? 'completed' : ''}`}
                 >
-                  <div className="task-main">
-                    <button
-                      className="task-checkbox"
-                      onClick={() => toggleDone(task.id)}
-                      type="button"
-                    >
-                      {task.done ? '✓' : ''}
-                    </button>
-                    <div className="task-info">
-                      <h4 className={task.done ? 'done-text' : ''}>{task.title}</h4>
-                      {task.description && (
-                        <p className={task.done ? 'done-text' : ''}>{task.description}</p>
-                      )}
-                      <div className="task-tags">
-                        <span
-                          className="tag priority"
-                          style={{ background: getPriorityColor(task.priority) + '20', color: getPriorityColor(task.priority) }}
-                        >
-                          {getPriorityIcon(task.priority)} {task.priority}
-                        </span>
-                        <span
-                          className="tag status"
-                          style={{ background: getStatusColor(task.status) + '20', color: getStatusColor(task.status) }}
-                        >
-                          {getStatusIcon(task.status)} {task.status}
-                        </span>
-                      </div>
+                  <div className="task-header">
+                    <div className="task-meta-top">
+                      <span className={`priority-badge ${task.priority}`}>
+                        {PRIORITIES.find(p => p.id === task.priority)?.label}
+                      </span>
+                    </div>
+                    <div className="task-actions-menu">
+                      <button 
+                        className="icon-btn"
+                        onClick={() => toggleDone(task)}
+                        title={task.done ? "Mark undone" : "Mark done"}
+                      >
+                        {task.done ? <div className="check-circle checked"><Icons.Check /></div> : <div className="check-circle"></div>}
+                      </button>
                     </div>
                   </div>
-                  <div className="task-actions-mini">
-                    <button onClick={() => editTask(task.id)} className="action-icon edit" type="button">
-                      ✏️
+
+                  <h4 className="task-title" onClick={() => {
+                    setEditingTask(task);
+                    setFormData({
+                      title: task.title,
+                      description: task.description || '',
+                      priority: task.priority || 'medium',
+                      status: task.status || 'pending',
+                      done: task.done || false
+                    });
+                    setIsTaskModalOpen(true);
+                  }}>{task.title}</h4>
+                  
+                  {task.description && (
+                    <p className="task-description">{task.description}</p>
+                  )}
+
+                  <div className="task-footer">
+                    <button 
+                      className="icon-btn small"
+                      onClick={() => {
+                        setEditingTask(task);
+                        setFormData({
+                          title: task.title,
+                          description: task.description || '',
+                          priority: task.priority || 'medium',
+                          status: task.status || 'pending',
+                          done: task.done || false
+                        });
+                        setIsTaskModalOpen(true);
+                      }}
+                      title="Edit"
+                    >
+                      <Icons.Edit />
                     </button>
-                    <button onClick={() => setDeleteAlert({ show: true, taskId: task.id })} className="action-icon delete" type="button">
-                      🗑️
+                    <button 
+                      className="icon-btn small danger"
+                      onClick={() => archiveTask(task.id)}
+                      title="Delete"
+                    >
+                      <Icons.Trash />
                     </button>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Priority Breakdown Card */}
-        <div className="bento-card priority-card">
-          <h3>Priority</h3>
-          <div className="priority-list">
-            <div className="priority-row">
-              <span className="priority-label">🔥 High</span>
-              <span className="priority-count">{tasks.filter(t => t.priority === 'high').length}</span>
-            </div>
-            <div className="priority-row">
-              <span className="priority-label">⚡ Medium</span>
-              <span className="priority-count">{tasks.filter(t => t.priority === 'medium').length}</span>
-            </div>
-            <div className="priority-row">
-              <span className="priority-label">🌱 Low</span>
-              <span className="priority-count">{tasks.filter(t => t.priority === 'low').length}</span>
+              ))}
+              
+              <button 
+                className="add-card-btn"
+                onClick={() => {
+                  resetForm();
+                  setFormData(prev => ({ ...prev, status: column.id }));
+                  setIsTaskModalOpen(true);
+                }}
+              >
+                <Icons.Plus />
+                <span>Add task</span>
+              </button>
             </div>
           </div>
-        </div>
-
-        {/* Actions Card */}
-        <div className="bento-card actions-card">
-          <h3>Quick Actions</h3>
-          <div className="actions-buttons">
-            <button onClick={markAllDone} className="action-btn primary">
-              ✅ Mark All Done
-            </button>
-            <button onClick={clearAll} className="action-btn danger">
-              🗑️ Clear All
-            </button>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Confetti Root */}
-      <div ref={confettiRootRef} className="confetti-root" aria-hidden="true"></div>
+      {/* Quick Actions Bar */}
+      <div className="quick-actions">
+        <button onClick={markAllDone} className="action-btn secondary">
+          Mark All Done
+        </button>
+        <button onClick={clearAll} className="action-btn danger">
+          Clear All
+        </button>
+      </div>
 
-      {/* Custom Alerts */}
-      <CustomAlert
-        isOpen={deleteAlert.show}
-        title="Delete Task"
-        message="Are you sure you want to delete this task? This action cannot be undone."
-        onClose={() => setDeleteAlert({ show: false, taskId: null })}
-        onConfirm={handleDeleteConfirm}
-      />
-
-      <CustomAlert
-        isOpen={clearAllAlert}
-        title="Clear All Tasks"
-        message="Are you sure you want to clear all tasks? This action cannot be undone."
-        onClose={() => setClearAllAlert(false)}
-        onConfirm={handleClearAllConfirm}
-      />
-
-      <CustomAlert
-        isOpen={editAlert.show}
-        title="Edit Task"
-        message={
-          <div className="edit-form">
-            <div className="form-field">
-              <label>Task Title *</label>
-              <input
-                className="edit-input"
-                placeholder="Enter task title..."
-                value={editAlert.title}
-                onChange={(e) => setEditAlert({ ...editAlert, title: e.target.value })}
-              />
-            </div>
-            <div className="form-field">
-              <label>Description</label>
-              <input
-                className="edit-input"
-                placeholder="Enter description..."
-                value={editAlert.description}
-                onChange={(e) => setEditAlert({ ...editAlert, description: e.target.value })}
-              />
-            </div>
-            <div className="form-row-edit">
-              <div className="form-field">
-                <label>Priority</label>
-                <select
-                  className="edit-select"
-                  value={editAlert.priority}
-                  onChange={(e) => setEditAlert({ ...editAlert, priority: e.target.value })}
+      {/* Task Modal */}
+      {isTaskModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsTaskModalOpen(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <form onSubmit={editingTask ? (e) => {
+              e.preventDefault();
+              updateTask(editingTask.id, formData);
+              setIsTaskModalOpen(false);
+            } : addTask}>
+              
+              <div className="modal-header">
+                <input
+                  type="text"
+                  placeholder="Task title"
+                  value={formData.title}
+                  onChange={e => setFormData({...formData, title: e.target.value})}
+                  className="title-input"
+                  autoFocus
+                />
+                <button 
+                  type="button" 
+                  className="close-btn"
+                  onClick={() => setIsTaskModalOpen(false)}
                 >
-                  <option value="low">🌱 Low</option>
-                  <option value="medium">⚡ Medium</option>
-                  <option value="high">🔥 High</option>
-                </select>
+                  ×
+                </button>
               </div>
-              <div className="form-field">
-                <label>Status</label>
-                <select
-                  className="edit-select"
-                  value={editAlert.status}
-                  onChange={(e) => setEditAlert({ ...editAlert, status: e.target.value })}
-                >
-                  <option value="pending">⏳ Pending</option>
-                  <option value="in-progress">🔄 In Progress</option>
-                  <option value="completed">✅ Completed</option>
-                </select>
+
+              <div className="modal-body">
+                <div className="form-group">
+                  <label>Description</label>
+                  <textarea
+                    value={formData.description}
+                    onChange={e => setFormData({...formData, description: e.target.value})}
+                    placeholder="Add a more detailed description..."
+                    rows={4}
+                  />
+                </div>
+
+                <div className="form-row three-col">
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select 
+                      value={formData.status}
+                      onChange={e => setFormData({...formData, status: e.target.value})}
+                    >
+                      {COLUMNS.map(col => (
+                        <option key={col.id} value={col.id}>{col.title}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Priority</label>
+                    <select 
+                      value={formData.priority}
+                      onChange={e => setFormData({...formData, priority: e.target.value})}
+                    >
+                      {PRIORITIES.map(p => (
+                        <option key={p.id} value={p.id}>{p.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
-            </div>
+
+              <div className="modal-footer">
+                <div className="footer-actions">
+                  <button 
+                    type="button" 
+                    className="btn-secondary"
+                    onClick={() => setIsTaskModalOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn-primary"
+                    disabled={!formData.title.trim()}
+                  >
+                    {editingTask ? 'Save Changes' : 'Create Task'}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
-        }
-        onClose={() => setEditAlert({ show: false, task: null, title: "", description: "", priority: "medium", status: "pending" })}
-        onConfirm={handleEditConfirm}
-      />
+        </div>
+      )}
     </div>
   );
 }
