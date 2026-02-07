@@ -64,7 +64,7 @@
 /* Mobile Footer Styles */
 .mobile-footer {
     width: 100%;
-    padding: 1.5rem 0;
+    padding: 1.5rem 0 2rem 0; /* Increased bottom padding */
 }
 
 .mobile-footer-section {
@@ -158,6 +158,7 @@
 .footer-bottom-mobile {
     text-align: center;
     padding-top: 1rem;
+    padding-bottom: 1rem; /* Added bottom padding for extra spacing */
 }
 
 .copyright-mobile {
