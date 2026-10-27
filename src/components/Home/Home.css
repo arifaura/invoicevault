@@ -127,6 +127,7 @@
   border-radius: 9px;
   background: rgba(107, 126, 255, 0.15);
   color: #fff !important;
+  -webkit-text-fill-color: #fff;
   transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
 }
 
@@ -296,10 +297,13 @@
   background: linear-gradient(110deg, #5c7aff, #7967f8);
   box-shadow: 0 9px 28px rgba(90, 104, 255, 0.25);
   color: #fff !important;
+  -webkit-text-fill-color: #fff;
 }
 
+.landing-page a.button-primary,
 .landing-page a.button-primary:visited {
   color: #fff !important;
+  -webkit-text-fill-color: #fff;
 }
 
 .button-primary:hover {
@@ -312,10 +316,13 @@
   border: 1px solid rgba(205, 215, 255, 0.2);
   background: rgba(255, 255, 255, 0.045);
   color: #e6eaff !important;
+  -webkit-text-fill-color: #e6eaff;
 }
 
+.landing-page a.button-secondary,
 .landing-page a.button-secondary:visited {
   color: #e6eaff !important;
+  -webkit-text-fill-color: #e6eaff;
 }
 
 .button-secondary:hover {

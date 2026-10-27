@@ -1,46 +1,35 @@
-const CACHE_NAME = 'invoicevault-v1';
-const urlsToCache = [
-  '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/manifest.json',
-  '/favicon.ico'
-];
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
+});
 
-// Install event
-self.addEventListener('install', event => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
+    Promise.all([
+      caches.delete('invoicevault-v1'),
+      self.clients.claim(),
+    ])
   );
 });
 
-// Fetch event
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', (event) => {
+  const requestUrl = new URL(event.request.url);
+  const isAppAsset = requestUrl.origin === self.location.origin
+    && requestUrl.pathname.startsWith('/static/')
+    && ['script', 'style'].includes(event.request.destination);
+
+  if (!isAppAsset) return;
+
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request);
-      })
-  );
-});
+    fetch(event.request).then((response) => {
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('text/html')) {
+        return new Response('Application asset not found.', {
+          status: 404,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        });
+      }
 
-// Activate event
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
+      return response;
     })
   );
 });
