@@ -1,9 +1,9 @@
 /* Default theme (light) */
 :root {
   --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
+  --bg-secondary: #f7f8fc;
   --bg-hover: #f1f5f9;
-  --text-primary: #000000;
+  --text-primary: #16213b;
   --text-secondary: #4b5563;
   --text-muted: #6b7280;
   --border-color: #e5e7eb;
@@ -27,15 +27,15 @@
 
 /* Dark theme */
 [data-theme="dark"] {
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #1a1a1a;
+  --bg-primary: #0b1020;
+  --bg-secondary: #0b1020;
   --bg-hover: #27272a;
-  --text-primary: #ffffff;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
-  --border-color: #27272a;
-  --input-bg: #27272a;
-  --card-bg: #27272a;
+  --text-primary: #f1f4ff;
+  --text-secondary: #c1c9dc;
+  --text-muted: #9aa5bc;
+  --border-color: #35405a;
+  --input-bg: #151e33;
+  --card-bg: #111a2d;
   --card-shadow: 0 1px 3px rgba(0,0,0,0.3);
   --btn-primary-bg: #ffffff;
   --btn-primary-text: #18181b;
@@ -63,7 +63,7 @@ body {
   min-height: 100vh;
   background-color: var(--bg-secondary) !important;
   color: var(--text-primary) !important;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* App container */
@@ -93,11 +93,11 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  color: var(--text-primary) !important;
+  color: var(--text-primary);
 }
 
-p, span {
-  color: var(--text-secondary) !important;
+p {
+  color: inherit;
 }
 
 .text-muted {
@@ -164,12 +164,12 @@ p, span {
 
 /* Links */
 a {
-  color: var(--link-color) !important;
+  color: var(--link-color);
   text-decoration: none;
 }
 
 a:hover {
-  color: var(--link-color) !important;
+  color: var(--link-color);
   opacity: 0.8;
 }
 

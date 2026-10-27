@@ -4,9 +4,9 @@ import { FcGoogle } from 'react-icons/fc';
 import { FaFacebook, FaApple } from 'react-icons/fa';
 import { supabase } from '../../utils/supabaseClient';
 import { toast } from 'react-hot-toast';
-import './Signup.css';
+import '../Auth/Auth.css';
 import { BsEyeFill, BsEyeSlashFill, BsEnvelope, BsLock, BsPerson } from 'react-icons/bs';
-import Logo from '../Common/Logo';
+import AuthShowcase from '../Auth/AuthShowcase';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -64,14 +64,11 @@ const Signup = () => {
 
   return (
     <div className="auth-container">
+      <AuthShowcase />
       <div className="auth-card">
-        <div className="auth-icon">
-          <div className="icon-container">
-            <Logo size="small" />
-          </div>
-        </div>
+        <span className="auth-showcase-kicker">Start with a little more order</span>
         <h1 className="auth-title">Create your account</h1>
-        <p className="auth-description">Make a new doc to bring your words, data, and teams together. For free</p>
+        <p className="auth-description">Create your free account and give your important documents a better home.</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="input-group">

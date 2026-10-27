@@ -4,11 +4,11 @@ import { FcGoogle } from 'react-icons/fc';
 import { FaFacebook, FaApple } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { supabase } from '../../utils/supabaseClient';
-import './Login.css';
+import '../Auth/Auth.css';
 import { BsEyeFill, BsEyeSlashFill, BsEnvelope, BsLock } from 'react-icons/bs';
-import Logo from '../Common/Logo';
 import ForgotPassword from '../Auth/ForgotPassword';
 import ResetPassword from '../Auth/ResetPassword';
+import AuthShowcase from '../Auth/AuthShowcase';
 
 const Login = ({ isResetMode: initialResetMode = false, resetCode = false }) => {
   const navigate = useNavigate();
@@ -65,6 +65,7 @@ const Login = ({ isResetMode: initialResetMode = false, resetCode = false }) => 
   if (resetCode) {
     return (
       <div className="auth-container">
+        <AuthShowcase />
         <div className="auth-card">
             <ResetPassword />
         </div>
@@ -75,6 +76,7 @@ const Login = ({ isResetMode: initialResetMode = false, resetCode = false }) => 
   if (isResetMode) {
     return (
       <div className="auth-container">
+        <AuthShowcase />
         <div className="auth-card">
             <ForgotPassword onBackToLogin={() => setIsResetMode(false)} />
         </div>
@@ -84,14 +86,11 @@ const Login = ({ isResetMode: initialResetMode = false, resetCode = false }) => 
 
   return (
     <div className="auth-container">
+      <AuthShowcase />
       <div className="auth-card">
-        <div className="auth-icon">
-          <div className="icon-container">
-            <Logo size="small" />
-              </div>
-            </div>
-        <h1 className="auth-title">Sign in with email</h1>
-        <p className="auth-description">Make a new doc to bring your words, data, and teams together. For free</p>
+        <span className="auth-showcase-kicker">Welcome back</span>
+        <h1 className="auth-title">Sign in to your account</h1>
+        <p className="auth-description">Pick up where you left off. Your documents are right where you left them.</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="input-group">

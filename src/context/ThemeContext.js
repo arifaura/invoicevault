@@ -17,14 +17,10 @@ export const ThemeProvider = ({ children }) => {
     const theme = isDarkMode ? 'dark' : 'light';
     localStorage.setItem('theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
-    
-    // Add theme class to body
-    document.body.className = theme + '-theme';
-    
-    // Force a repaint to ensure styles are applied
-    document.body.style.backgroundColor = '';
-    void document.body.offsetHeight; // Trigger reflow
-    document.body.style.backgroundColor = isDarkMode ? '#1f2937' : '#f8f9fa';
+    document.documentElement.style.colorScheme = theme;
+
+    document.body.classList.toggle('dark-theme', isDarkMode);
+    document.body.classList.toggle('light-theme', !isDarkMode);
   }, [isDarkMode]);
 
   const toggleTheme = () => {
