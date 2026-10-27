@@ -13,7 +13,11 @@ import {
   FiList,
   FiMoon,
   FiSun,
-  FiMonitor
+  FiMonitor,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiClock,
+  FiDollarSign
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import CreateInvoiceModal from './CreateInvoiceModal';
@@ -22,6 +26,7 @@ import { toast } from 'react-hot-toast';
 import { supabase } from '../../utils/supabaseClient';
 import * as XLSX from 'xlsx';
 import './Invoices.css';
+import { formatWarrantyRemaining } from '../../utils/warrantyFormatters';
 
 // Theme Provider Hook
 const useTheme = () => {
@@ -355,17 +360,31 @@ const Invoices = () => {
 
   const calculateWarrantyDaysLeft = (purchaseDate, warrantyPeriod) => {
     if (!warrantyPeriod || warrantyPeriod === 'N/A') return null;
-    let days = 0;
-    const years = warrantyPeriod.match(/(\d+)\s*year/);
-    const months = warrantyPeriod.match(/(\d+)\s*month/);
-    
-    if (years) days += parseInt(years[1]) * 365;
-    if (months) days += parseInt(months[1]) * 30;
-    if (days === 0) return null;
+    const years = Number(warrantyPeriod.match(/(\d+)\s*year/i)?.[1] || 0);
+    const months = Number(warrantyPeriod.match(/(\d+)\s*month/i)?.[1] || 0);
+    if (years === 0 && months === 0) return null;
 
-    const purchase = new Date(purchaseDate).getTime();
-    const remaining = Math.ceil((purchase + (days * 86400000) - Date.now()) / 86400000);
-    return remaining;
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(purchaseDate || '');
+    const purchase = dateOnly
+      ? new Date(Date.UTC(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3])))
+      : new Date(purchaseDate);
+    if (Number.isNaN(purchase.getTime())) return null;
+
+    const expiration = new Date(purchase.getTime());
+    const purchaseDay = expiration.getUTCDate();
+    expiration.setUTCDate(1);
+    expiration.setUTCFullYear(expiration.getUTCFullYear() + years);
+    expiration.setUTCMonth(expiration.getUTCMonth() + months);
+    const lastDayOfMonth = new Date(Date.UTC(
+      expiration.getUTCFullYear(),
+      expiration.getUTCMonth() + 1,
+      0
+    )).getUTCDate();
+    expiration.setUTCDate(Math.min(purchaseDay, lastDayOfMonth));
+
+    const today = new Date();
+    const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+    return Math.ceil((expiration.getTime() - todayUtc) / 86400000);
   };
 
   const getWarrantyColor = (days) => {
@@ -467,25 +486,25 @@ const Invoices = () => {
           title="Total Amount" 
           value={`$${stats.total.toLocaleString()}`} 
           trend={{ type: 'up', value: '+12%' }}
-          icon={FiSearch}
+          icon={FiDollarSign}
           color="blue"
         />
         <StatCard 
           title="Paid Invoices" 
           value={stats.paid} 
-          icon={FiSearch}
+          icon={FiCheckCircle}
           color="green"
         />
         <StatCard 
           title="Pending" 
           value={stats.pending} 
-          icon={FiSearch}
+          icon={FiClock}
           color="orange"
         />
         <StatCard 
           title="Overdue" 
           value={stats.overdue} 
-          icon={FiSearch}
+          icon={FiAlertCircle}
           color="red"
         />
       </div>
@@ -747,7 +766,7 @@ const Invoices = () => {
                                 />
                               </div>
                               <span className="warranty-text">
-                                {daysLeft > 0 ? `${daysLeft}d left` : 'Expired'}
+                                {formatWarrantyRemaining(daysLeft)}
                               </span>
                             </div>
                           ) : (
@@ -832,7 +851,7 @@ const Invoices = () => {
                     </div>
                     {daysLeft !== null && (
                       <span className={`warranty-pill ${getWarrantyColor(daysLeft)}`}>
-                        {daysLeft > 0 ? `${daysLeft}d` : 'Exp'}
+                        {formatWarrantyRemaining(daysLeft)}
                       </span>
                     )}
                   </div>

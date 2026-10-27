@@ -1,22 +1,43 @@
-.dashboard-sidebar {
+.dashboard-container .dashboard-sidebar {
     width: 240px;
-    background-color: var(--bg-primary);
-    border-right: 1px solid var(--border-color);
-    height: calc(100vh - 60px); /* Subtract header height */
-    position: fixed;
-    left: 0;
-    top: 60px; /* Match header height */
-    transition: transform 0.3s ease;
+    flex: 0 0 240px;
+    box-sizing: border-box;
+    padding: 0;
+    background:
+        radial-gradient(ellipse at 4% 12%, rgba(129, 112, 255, 0.08), transparent 30%),
+        color-mix(in srgb, var(--bg-primary) 94%, var(--bg-secondary));
+    border-right: 1px solid color-mix(in srgb, var(--border-color) 78%, #a99bff);
+    height: calc(100vh - 68px); /* Subtract header height */
+    position: sticky;
+    top: 0;
+    overflow: hidden;
+    transition: width 0.3s ease, flex-basis 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s;
     display: flex;
     flex-direction: column;
+    box-shadow: 12px 0 28px -26px rgba(28, 36, 79, 0.42);
+    backdrop-filter: blur(16px);
+    z-index: 20;
 }
 
-.dashboard-sidebar.collapsed {
-    transform: translateX(-100%);
+.dashboard-container .dashboard-sidebar.collapsed {
+    width: 0;
+    flex-basis: 0;
+    border-right: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.dashboard-container .dashboard-sidebar:not(.collapsed) {
+    visibility: visible;
+    transition-delay: 0s;
+}
+
+.sidebar-backdrop {
+    display: none;
 }
 
 .sidebar-nav {
-    padding: 1rem 0.75rem;
+    padding: 1.35rem 0.85rem;
     flex: 1;
     overflow-y: auto;
     scrollbar-width: thin;
@@ -39,22 +60,40 @@
 .nav-item {
     display: flex;
     align-items: center;
-    padding: 0.75rem 1rem;
+    position: relative;
+    padding: 0.8rem 1rem;
     color: var(--text-secondary);
     text-decoration: none;
-    border-radius: 8px;
-    margin-bottom: 0.25rem;
-    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    border-radius: 13px;
+    margin-bottom: 0.42rem;
+    transition: color 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
 }
 
 .nav-item:hover {
-    background-color: var(--bg-secondary);
+    background: var(--bg-secondary);
     color: var(--text-primary);
+    transform: translateX(3px);
 }
 
 .nav-item.active {
-    background-color: var(--bg-secondary);
+    border-color: rgba(129, 112, 255, 0.16);
+    background: linear-gradient(120deg, rgba(129, 112, 255, 0.15), rgba(129, 112, 255, 0.055));
     color: var(--link-color);
+    box-shadow: 0 8px 16px -14px rgba(90, 75, 196, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    transform: translateX(3px);
+}
+
+.nav-item.active::before {
+    position: absolute;
+    left: -1px;
+    top: 25%;
+    bottom: 25%;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: linear-gradient(180deg, #a79bff, #6958e8);
+    content: "";
+    box-shadow: 0 0 12px rgba(111, 92, 238, 0.42);
 }
 
 .nav-icon {
@@ -71,17 +110,22 @@
 .sidebar-footer {
     padding: 1rem;
     border-top: 1px solid var(--border-color);
-    background-color: var(--bg-primary);
+    background-color: transparent;
     margin-top: auto;
 }
 
 .upgrade-pro {
-    background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    background:
+        radial-gradient(circle at 100% 0, rgba(255, 255, 255, 0.28), transparent 38%),
+        linear-gradient(145deg, #4a3da7 0%, #7064e8 58%, #8a7cff 100%);
     padding: 1.25rem;
-    border-radius: 12px;
+    border-radius: 18px;
     text-align: center;
     color: white;
-    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 18px 26px -18px rgba(64, 51, 166, 0.88), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 0 rgba(37, 27, 121, 0.2);
 }
 
 .upgrade-text {
@@ -103,7 +147,8 @@
     color: #6366f1;
     border: none;
     padding: 0.625rem 1rem;
-    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 11px;
     font-size: 0.875rem;
     font-weight: 500;
     width: 100%;
@@ -113,7 +158,7 @@
 
 .btn-upgrade:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 16px rgba(25, 20, 80, 0.2), inset 0 1px 0 white;
 }
 
 .btn-upgrade:active {
@@ -121,7 +166,40 @@
 }
 
 @media (max-width: 768px) {
-    .dashboard-sidebar {
+    .dashboard-container .dashboard-sidebar {
+        position: fixed;
+        left: 0;
+        top: 60px;
+        height: calc(100vh - 60px);
+        width: 240px;
+        flex-basis: 240px;
+        padding: 0;
+        border-right: 1px solid color-mix(in srgb, var(--border-color) 78%, #a99bff);
+        transform: translateX(0);
+        transition: transform 0.3s ease, visibility 0s linear 0s;
+        z-index: 1001;
+    }
+
+    .dashboard-container .dashboard-sidebar.collapsed {
+        width: 240px;
+        flex-basis: 240px;
+        border-right: 1px solid color-mix(in srgb, var(--border-color) 78%, #a99bff);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease, visibility 0s linear 0.3s;
+    }
+
+    .sidebar-backdrop {
+        position: fixed;
+        inset: 60px 0 0;
+        display: block;
+        width: 100%;
+        height: calc(100vh - 60px);
+        min-width: 0;
+        min-height: 0;
+        padding: 0;
+        border: 0;
+        background: rgba(15, 23, 42, 0.32);
+        backdrop-filter: blur(2px);
         z-index: 1000;
     }
 

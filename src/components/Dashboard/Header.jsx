@@ -38,7 +38,7 @@ const getNotificationIcon = (iconName) => {
   }
 };
 
-const Header = ({ onMenuClick }) => {
+const Header = ({ onMenuClick, isSidebarOpen }) => {
   const { theme, toggleTheme } = useTheme();
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications, dnd, setDnd, requestDesktopPermission, addNotification } =
     useNotifications();
@@ -177,6 +177,9 @@ const Header = ({ onMenuClick }) => {
           className="menu-button"
           onClick={onMenuClick}
           aria-label="Toggle menu"
+          aria-expanded={isSidebarOpen}
+          aria-controls="dashboard-sidebar"
+          type="button"
         >
           <HiMenuAlt2 size={24} />
         </button>

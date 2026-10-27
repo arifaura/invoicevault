@@ -5,27 +5,34 @@ import Sidebar from './Sidebar';
 import Footer from './Footer';
 import MobileNav from '../MobileNav/MobileNav';
 import './DashboardLayout.css';
-import { useAuth } from '../../context/AuthContext';
 import { ProfileProvider } from '../../context/ProfileContext';
-import { useUpgrade } from '../../context/UpgradeContext';
 
 const DashboardLayout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { user, isAuthenticated } = useAuth();
-  const { isUpgradeModalOpen } = useUpgrade();
-  
-  // console.log('Dashboard Layout:', { user, isAuthenticated, isUpgradeModalOpen });
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 768);
 
   const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+    setIsSidebarOpen((isOpen) => !isOpen);
   };
 
   return (
     <ProfileProvider>
       <div className="dashboard-container">
-        <Header onMenuClick={toggleSidebar} />
+        <Header onMenuClick={toggleSidebar} isSidebarOpen={isSidebarOpen} />
         <div className="dashboard-content">
-          <Sidebar isOpen={isSidebarOpen} />
+          {isSidebarOpen && (
+            <button
+              className="sidebar-backdrop"
+              onClick={() => setIsSidebarOpen(false)}
+              aria-label="Close navigation menu"
+              type="button"
+            />
+          )}
+          <Sidebar
+            isOpen={isSidebarOpen}
+            onNavigate={() => {
+              if (window.innerWidth <= 768) setIsSidebarOpen(false);
+            }}
+          />
           <main className={`main-content ${!isSidebarOpen ? 'expanded' : ''}`}>
             <div className="content-wrapper">
               <Outlet />

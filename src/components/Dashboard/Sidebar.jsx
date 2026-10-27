@@ -10,7 +10,7 @@ import { HiOutlineClipboardCheck } from 'react-icons/hi';
 import './Sidebar.css';
 import { useUpgrade } from '../../context/UpgradeContext';
 
-const Sidebar = ({ isOpen }) => {
+const Sidebar = ({ isOpen, onNavigate }) => {
   const { openUpgradeModal } = useUpgrade();
 
   const menuItems = [
@@ -42,12 +42,17 @@ const Sidebar = ({ isOpen }) => {
   };
 
   return (
-    <aside className={`dashboard-sidebar ${!isOpen ? 'collapsed' : ''}`}>
+    <aside
+      id="dashboard-sidebar"
+      className={`dashboard-sidebar ${!isOpen ? 'collapsed' : ''}`}
+      aria-hidden={!isOpen}
+    >
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={onNavigate}
             className={({ isActive }) => 
               `nav-item ${isActive ? 'active' : ''}`
             }

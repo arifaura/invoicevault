@@ -289,8 +289,15 @@ const Overview = () => {
     <div className="overview-container p-4">
       {/* Welcome Section */}
       <div className="welcome-section mb-4">
-        <h1 className="text-2xl font-bold mb-2">Welcome back!</h1>
-        <p className="text-gray-600">Here's what's happening with your invoices today.</p>
+        <div className="welcome-copy">
+          <span className="welcome-eyebrow">YOUR FINANCIAL OVERVIEW</span>
+          <h1 className="text-2xl font-bold mb-2">Welcome back!</h1>
+          <p>Here's what's happening with your invoices today.</p>
+        </div>
+        <div className="overview-live-pill">
+          <span className="live-indicator" />
+          Overview
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -316,24 +323,6 @@ const Overview = () => {
           ))
         )}
       </div>
-
-      {/* No Invoices Message */}
-      {recentInvoices.length === 0 && (
-        <div className="no-invoices-container">
-          <div className="empty-state">
-            <RiFileListLine size={64} className="empty-icon" />
-            <h3>No Invoices Yet</h3>
-            <p>Start by creating your first invoice to track your expenses.</p>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="btn-primary"
-            >
-              <FiPlus size={16} className="mr-2" />
-              Create Your First Invoice
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Actions Bar */}
       <div className="actions-bar mb-4">

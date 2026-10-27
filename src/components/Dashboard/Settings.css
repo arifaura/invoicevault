@@ -1,20 +1,44 @@
 .settings-container {
-  padding: var(--spacing-base);
+  width: 100%;
+  min-height: 100%;
+  padding: 0.5rem 0 2rem;
+}
+
+.settings-container .page-header {
+  margin-bottom: 1.5rem;
+}
+
+.settings-container .page-header h1 {
+  margin-bottom: 0.35rem;
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.settings-container .page-header p {
+  margin: 0;
+  color: var(--text-secondary);
 }
 
 .settings-content {
   display: flex;
-  gap: 2rem;
-  margin-top: 2rem;
+  gap: 0;
+  width: 100%;
+  min-height: 560px;
+  margin-top: 0;
   background-color: var(--bg-primary);
-  border-radius: 12px;
+  border-radius: 22px;
   border: 1px solid var(--border-color);
+  overflow: hidden;
+  box-shadow: 0 18px 34px -28px rgba(33, 42, 81, 0.55), 0 7px 16px -12px rgba(33, 42, 81, 0.32);
 }
 
 .settings-sidebar {
-  width: 240px;
-  padding: 1.5rem;
+  width: 220px;
+  flex: 0 0 220px;
+  padding: 1.25rem 1rem;
   border-right: 1px solid var(--border-color);
+  background: linear-gradient(160deg, var(--bg-secondary), var(--bg-primary));
 }
 
 .settings-tab {
@@ -26,7 +50,8 @@
   border: none;
   background: none;
   color: var(--text-secondary);
-  border-radius: 8px;
+  border: 1px solid transparent;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
@@ -39,14 +64,17 @@
 }
 
 .settings-tab.active {
-  background-color: var(--bg-secondary);
+  border-color: rgba(129, 112, 255, 0.16);
+  background: linear-gradient(120deg, rgba(129, 112, 255, 0.15), rgba(129, 112, 255, 0.055));
   color: var(--link-color);
+  box-shadow: 0 8px 16px -14px rgba(90, 75, 196, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
 
 .settings-panel {
   flex: 1;
-  padding: 1.5rem;
-  max-width: 800px;
+  min-width: 0;
+  padding: 2rem;
+  max-width: none;
 }
 
 .settings-section {
@@ -56,30 +84,31 @@
 .settings-section h2 {
   font-size: 1.25rem;
   font-weight: 600;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
   color: var(--text-primary);
+  letter-spacing: -0.025em;
 }
 
-.form-row {
+.settings-container .form-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1rem;
   margin-bottom: 1rem;
 }
 
-.form-group {
+.settings-container .form-group {
   margin-bottom: 1.25rem;
 }
 
-.form-group label {
+.settings-container .form-group label {
   display: block;
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
-.form-group input,
-.form-group select {
+.settings-container .form-group input,
+.settings-container .form-group select {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid var(--border-color);
@@ -89,8 +118,8 @@
   font-size: 0.875rem;
 }
 
-.form-group input:focus,
-.form-group select:focus {
+.settings-container .form-group input:focus,
+.settings-container .form-group select:focus {
   outline: none;
   border-color: var(--link-color);
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
@@ -107,7 +136,8 @@
   position: relative;
   width: 100px;
   height: 100px;
-  border-radius: 50%;
+  border-radius: 22px;
+  box-shadow: 0 12px 24px -16px rgba(75, 65, 165, 0.55);
   overflow: hidden;
 }
 
@@ -165,8 +195,9 @@
 .avatar-placeholder {
   width: 100px;
   height: 100px;
-  border-radius: 50%;
-  background-color: var(--link-color);
+  border-radius: 22px;
+  background: linear-gradient(145deg, #8171ff, #5744d0);
+  box-shadow: 0 12px 24px -16px rgba(75, 65, 165, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   color: white;
   display: flex;
   align-items: center;
@@ -267,7 +298,7 @@ input:checked + .slider:before {
   justify-content: flex-end;
 }
 
-.btn {
+.settings-container .btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -279,23 +310,23 @@ input:checked + .slider:before {
   transition: all 0.2s ease;
 }
 
-.btn-primary {
+.settings-container .btn-primary {
   background-color: var(--link-color);
   color: white;
   border: none;
 }
 
-.btn-primary:hover {
+.settings-container .btn-primary:hover {
   background-color: #4f46e5;
 }
 
-.btn-secondary {
+.settings-container .btn-secondary {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
 }
 
-.btn-secondary:hover {
+.settings-container .btn-secondary:hover {
   background-color: var(--border-color);
 }
 
@@ -312,17 +343,17 @@ input:checked + .slider:before {
   color: var(--text-primary);
 }
 
-.password-requirements {
+.settings-container .password-requirements {
   margin-top: 0.5rem;
 }
 
-.password-requirements ul {
+.settings-container .password-requirements ul {
   list-style: none;
   padding: 0;
   margin: 0.5rem 0;
 }
 
-.password-requirements li {
+.settings-container .password-requirements li {
   display: flex;
   align-items: center;
   font-size: 0.875rem;
@@ -330,38 +361,33 @@ input:checked + .slider:before {
   color: var(--text-secondary);
 }
 
-.password-requirements li.valid {
+.settings-container .password-requirements li.valid {
   color: var(--success-color);
 }
 
-.password-requirements li.invalid {
+.settings-container .password-requirements li.invalid {
   color: var(--danger-color);
 }
 
-.password-requirements i {
+.settings-container .password-requirements i {
   margin-right: 0.5rem;
 }
 
-.divider {
+.settings-container .divider {
   height: 1px;
   background-color: var(--border-color);
   margin: 2rem 0;
 }
 
 /* Add these variables to your theme.css if not already present */
-:root {
-  --success-color: #10b981;
-  --danger-color: #ef4444;
-}
-
 /* Add these styles */
-.form-control.disabled {
+.settings-container .form-control.disabled {
   background-color: var(--bg-secondary);
   cursor: not-allowed;
   opacity: 0.7;
 }
 
-.form-control:disabled {
+.settings-container .form-control:disabled {
   background-color: var(--bg-secondary);
   cursor: not-allowed;
   opacity: 0.7;
@@ -381,6 +407,7 @@ input:checked + .slider:before {
 
   .settings-sidebar {
     width: 100%;
+    flex-basis: auto;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
     padding: 1rem;
@@ -402,7 +429,7 @@ input:checked + .slider:before {
     margin-bottom: 1rem;
   }
 
-  .form-row {
+  .settings-container .form-row {
     grid-template-columns: 1fr;
     gap: 0;
   }
@@ -435,7 +462,7 @@ input:checked + .slider:before {
     padding-top: 1rem;
   }
 
-  .btn {
+  .settings-container .btn {
     width: 100%;
     justify-content: center;
     padding: 1rem;
@@ -470,13 +497,13 @@ input:checked + .slider:before {
     font-size: 0.9rem;
   }
 
-  .form-group input,
-  .form-group select {
+  .settings-container .form-group input,
+  .settings-container .form-group select {
     padding: 0.875rem;
     font-size: 1rem;
   }
 
-  .btn {
+  .settings-container .btn {
     padding: 1rem;
     font-size: 1rem;
   }
@@ -491,4 +518,63 @@ input:checked + .slider:before {
     height: 70px;
     font-size: 1.25rem;
   }
-} 
+}
+
+.settings-container .avatar-preview {
+  border-radius: 22px;
+  border: 2px solid rgba(129, 112, 255, 0.22);
+}
+
+.settings-container .form-group input,
+.settings-container .form-group select {
+  min-height: 46px;
+  border-radius: 12px;
+  box-shadow: inset 0 1px 2px rgba(27, 38, 77, 0.04);
+}
+
+.settings-container .form-group input:focus,
+.settings-container .form-group select:focus {
+  border-color: #8d7cff;
+  box-shadow: 0 0 0 4px rgba(129, 112, 255, 0.12);
+}
+
+.settings-container .btn-primary {
+  min-height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #8171ff, #5d4ce0);
+  box-shadow: 0 11px 18px -11px rgba(76, 62, 189, 0.72), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.settings-container .btn-primary:hover {
+  background: linear-gradient(145deg, #8e80ff, #6655e8);
+  transform: translateY(-1px);
+}
+
+.settings-container .password-change-section {
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: linear-gradient(145deg, var(--bg-primary), var(--bg-secondary));
+}
+
+@media (max-width: 768px) {
+  .settings-content {
+    min-height: 0;
+  }
+
+  .settings-container .settings-sidebar {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+  }
+
+  .settings-container .settings-tab {
+    justify-content: center;
+    margin-bottom: 0;
+    white-space: nowrap;
+  }
+
+  .settings-container .settings-panel {
+    padding: 1.25rem;
+  }
+}
