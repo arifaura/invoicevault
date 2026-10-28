@@ -13,6 +13,7 @@ import NotFound from './components/NotFound/NotFound';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import Overview from './components/Dashboard/Overview';
 import Invoices from './components/Dashboard/Invoices';
+import Customers from './components/Dashboard/Customers';
 import InvoiceView from './components/Dashboard/InvoiceView';
 import Settings from './components/Dashboard/Settings';
 import { NotificationProvider } from './context/NotificationContext';
@@ -23,6 +24,7 @@ import PublicRoute from './components/PublicRoute';
 import Home from './components/Home/Home'; // Import the Home component
 import ResetPassword from './components/Auth/ResetPassword';
 import KanbanBoard from './components/Kanban/KanbanBoard';
+import { ContactUs, PrivacyPolicy, TermsOfService } from './components/Legal/LegalPages';
 
 function App() {
   return (
@@ -61,6 +63,9 @@ function App() {
                       <ResetPassword />
                     </PublicRoute>
                   } />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/contact" element={<ContactUs />} />
 
                   {/* Protected routes */}
                   <Route path="/dashboard" element={
@@ -70,6 +75,7 @@ function App() {
                   }>
                     <Route index element={<Overview />} />
                     <Route path="invoices" element={<Invoices />} />
+                    <Route path="customers" element={<Customers />} />
                     <Route path="invoice/:id" element={<InvoiceView />} />
                     <Route path="todo" element={<KanbanBoard />} />
                     <Route path="tasks" element={<KanbanBoard />} />

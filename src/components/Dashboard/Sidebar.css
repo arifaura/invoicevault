@@ -11,7 +11,11 @@
     position: sticky;
     top: 0;
     overflow: hidden;
-    transition: width 0.3s ease, flex-basis 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s;
+    transition:
+        width var(--motion-layout, 360ms) var(--motion-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+        flex-basis var(--motion-layout, 360ms) var(--motion-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+        transform var(--motion-layout, 360ms) var(--motion-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+        visibility 0s linear var(--motion-layout, 360ms);
     display: flex;
     flex-direction: column;
     box-shadow: 12px 0 28px -26px rgba(28, 36, 79, 0.42);
@@ -176,7 +180,9 @@
         padding: 0;
         border-right: 1px solid color-mix(in srgb, var(--border-color) 78%, #a99bff);
         transform: translateX(0);
-        transition: transform 0.3s ease, visibility 0s linear 0s;
+        transition:
+            transform var(--motion-layout, 360ms) var(--motion-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+            visibility 0s linear 0s;
         z-index: 1001;
     }
 
@@ -185,7 +191,9 @@
         flex-basis: 240px;
         border-right: 1px solid color-mix(in srgb, var(--border-color) 78%, #a99bff);
         transform: translateX(-100%);
-        transition: transform 0.3s ease, visibility 0s linear 0.3s;
+        transition:
+            transform var(--motion-layout, 360ms) var(--motion-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+            visibility 0s linear var(--motion-layout, 360ms);
     }
 
     .sidebar-backdrop {

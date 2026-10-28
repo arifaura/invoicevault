@@ -25,6 +25,11 @@ const Sidebar = ({ isOpen, onNavigate }) => {
       icon: <RiFileList2Line size={20} />
     },
     {
+      path: '/dashboard/customers',
+      name: 'Customers',
+      icon: <RiUserLine size={20} />
+    },
+    {
       path: '/dashboard/todo',
       name: 'Todo',
       icon: <HiOutlineClipboardCheck size={20} />
@@ -52,6 +57,7 @@ const Sidebar = ({ isOpen, onNavigate }) => {
           <NavLink
             key={item.path}
             to={item.path}
+            end={item.path === '/dashboard'}
             onClick={onNavigate}
             className={({ isActive }) => 
               `nav-item ${isActive ? 'active' : ''}`

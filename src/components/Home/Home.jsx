@@ -390,6 +390,12 @@ function Home() {
               <Link to="/login">Sign In</Link>
               <Link to="/signup">Get Started</Link>
             </div>
+            <div className="footer-nav-group">
+              <h3>Information</h3>
+              <Link to="/privacy">Privacy Policy</Link>
+              <Link to="/terms">Terms of Service</Link>
+              <Link to="/contact">Contact Us</Link>
+            </div>
           </div>
           <div className="footer-bottom">
             <span>© {new Date().getFullYear()} Invoice Vault</span>

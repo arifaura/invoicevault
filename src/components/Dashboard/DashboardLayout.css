@@ -20,7 +20,7 @@
     flex: 1;
     min-width: 0;
     margin-left: 0;
-    transition: margin-left 0.3s ease;
+    transition: margin-left var(--motion-layout, 360ms) var(--motion-ease, cubic-bezier(0.22, 1, 0.36, 1));
     height: calc(100vh - 68px);
     overflow: hidden;
     display: flex;

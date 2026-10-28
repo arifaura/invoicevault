@@ -1,5 +1,9 @@
 /* Default theme (light) */
 :root {
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-fast: 180ms;
+  --motion-normal: 240ms;
+  --motion-layout: 360ms;
   --bg-primary: #ffffff;
   --bg-secondary: #f7f8fc;
   --bg-hover: #f1f5f9;
@@ -54,7 +58,8 @@
 
 /* Base styles */
 html {
-  transition: background-color 0.3s ease;
+  scroll-behavior: smooth;
+  transition: background-color var(--motion-normal) var(--motion-ease);
 }
 
 body {
@@ -63,7 +68,8 @@ body {
   min-height: 100vh;
   background-color: var(--bg-secondary) !important;
   color: var(--text-primary) !important;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color var(--motion-normal) var(--motion-ease),
+    color var(--motion-normal) var(--motion-ease);
 }
 
 /* App container */
@@ -71,7 +77,8 @@ body {
   min-height: 100vh;
   background-color: var(--bg-secondary) !important;
   color: var(--text-primary);
-  transition: all 0.3s ease;
+  transition: background-color var(--motion-normal) var(--motion-ease),
+    color var(--motion-normal) var(--motion-ease);
 }
 
 [data-theme="dark"] body,
@@ -84,7 +91,9 @@ body {
   background-color: var(--card-bg);
   box-shadow: var(--card-shadow);
   border-color: var(--border-color);
-  transition: all 0.3s ease;
+  transition: background-color var(--motion-normal) var(--motion-ease),
+    border-color var(--motion-normal) var(--motion-ease),
+    box-shadow var(--motion-normal) var(--motion-ease);
 }
 
 /* Typography */
@@ -113,6 +122,10 @@ p {
   background-color: var(--input-bg) !important;
   border-color: var(--border-color) !important;
   color: var(--text-primary) !important;
+  transition: background-color var(--motion-normal) var(--motion-ease),
+    border-color var(--motion-normal) var(--motion-ease),
+    box-shadow var(--motion-normal) var(--motion-ease),
+    color var(--motion-normal) var(--motion-ease);
 }
 
 .form-control:focus {
@@ -131,6 +144,10 @@ p {
   background-color: var(--btn-primary-bg) !important;
   color: var(--btn-primary-text) !important;
   border: none;
+  transition: background-color var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
 }
 
 .btn-dark:hover {
@@ -141,6 +158,11 @@ p {
   background-color: var(--btn-secondary-bg) !important;
   border-color: var(--btn-secondary-border) !important;
   color: var(--btn-secondary-text) !important;
+  transition: background-color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
 }
 
 .btn-outline-secondary:hover {
@@ -166,6 +188,8 @@ p {
 a {
   color: var(--link-color);
   text-decoration: none;
+  transition: color var(--motion-fast) var(--motion-ease),
+    opacity var(--motion-fast) var(--motion-ease);
 }
 
 a:hover {
@@ -184,7 +208,11 @@ a:hover {
   background-color: var(--card-bg);
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: color var(--motion-normal) var(--motion-ease),
+    background-color var(--motion-normal) var(--motion-ease),
+    border-color var(--motion-normal) var(--motion-ease),
+    box-shadow var(--motion-normal) var(--motion-ease),
+    transform var(--motion-normal) var(--motion-ease);
   z-index: 1000;
   width: 40px;
   height: 40px;
@@ -247,4 +275,10 @@ a:hover {
 
 [data-theme="dark"] .theme-toggle:hover {
   background-color: var(--card-bg);
-} 
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

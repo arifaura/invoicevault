@@ -1838,7 +1838,7 @@
 
 .footer-main {
   display: grid;
-  grid-template-columns: 1.8fr 1fr 1fr;
+  grid-template-columns: 1.8fr repeat(3, minmax(0, 1fr));
   gap: 60px;
   padding-bottom: 42px;
 }
@@ -2050,7 +2050,7 @@
   }
 
   .footer-main {
-    grid-template-columns: 1.5fr 1fr 1fr;
+    grid-template-columns: 1.5fr repeat(3, minmax(0, 1fr));
     gap: 28px;
   }
 }
